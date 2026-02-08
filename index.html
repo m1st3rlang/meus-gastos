@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Gestão de Gastos</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body { font-family: Arial; background:#f4f6f8; padding:20px; }
+.container { max-width:600px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
+input, select, button { width:100%; padding:10px; margin-top:10px; }
+button { background:black; color:white; border:none; }
+.gasto { display:flex; justify-content:space-between; margin-top:5px; }
+</style>
+</head>
+
+<body>
+<div class="container">
+<h2>💰 Gestão de Gastos</h2>
+
+<div id="login">
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Senha">
+<button onclick="login()">Entrar / Criar conta</button>
+</div>
+
+<div id="app" style="display:none">
+<input id="desc" placeholder="Descrição">
+<select id="cat">
+<option>Alimentação</option>
+<option>Transporte</option>
+<option>Renda</option>
+<option>Lazer</option>
+<option>Outros</option>
+</select>
+<input id="val" type="number" placeholder="Valor (€)">
+<button onclick="addGasto()">Adicionar</button>
+
+<h3>Gastos do mês</h3>
+<div id="lista"></div>
+<h3>Total: € <span id="total">0</span></h3>
+
+<canvas id="grafico"></canvas>
+</div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyA53gz5pwnzSFx4alP2Gb6L7N3qAvXmMdU",
+  authDomain: "controle-financeiro-fafd9.firebaseapp.com",
+  projectId: "controle-financeiro-fafd9",
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let user;
+
+auth.onAuthStateChanged(u => {
+  if(u){
+    user = u;
+    document.getElementById("login").style.display="none";
+    document.getElementById("app").style.display="block";
+    carregar();
+  }
+});
+
+function login(){
+  auth.signInWithEmailAndPassword(email.value, password.value)
+  .catch(()=>auth.createUserWithEmailAndPassword(email.value, password.value));
+}
+
+function addGasto(){
+  db.collection("gastos").add({
+    uid:user.uid,
+    desc:desc.value,
+    cat:cat.value,
+    val:Number(val.value),
+    mes:new Date().getMonth()
+  });
+  desc.value=""; val.value="";
+}
+
+function carregar(){
+  db.collection("gastos").where("uid","==",user.uid)
+  .onSnapshot(s=>{
+    lista.innerHTML=""; let total=0; let cats={};
+    s.forEach(d=>{
+      let g=d.data(); total+=g.val;
+      cats[g.cat]=(cats[g.cat]||0)+g.val;
+      lista.innerHTML+=`<div class="gasto">${g.desc} €${g.val}</div>`;
+    });
+    document.getElementById("total").innerText = total.toFixed(2);
+    graf(cats);
+  });
+}
+
+function graf(c){
+ new Chart(grafico,{type:"pie",
+ data:{labels:Object.keys(c),datasets:[{data:Object.values(c)}]}})
+}
+</script>
+</body>
+</html>
