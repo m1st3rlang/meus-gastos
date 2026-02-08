@@ -25,8 +25,6 @@ button { background:black; color:white; border:none; }
 <div id="login">
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Senha">
-<button onclick="login()">Entrar / Criar conta</button>
-</div>
 
 <div id="app" style="display:none">
 <button onclick="logout()" style="margin-bottom:15px;">Sair</button>
@@ -46,7 +44,11 @@ button { background:black; color:white; border:none; }
 <h3>Total: € <span id="total">0</span></h3>
 
 <canvas id="grafico"></canvas>
+<div style="margin-top:30px; text-align:center;">
+  <button onclick="logout()">Sair</button>
 </div>
+
+
 </div>
 
 <script>
