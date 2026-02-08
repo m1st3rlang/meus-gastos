@@ -24,6 +24,7 @@ button { background:black; color:white; border:none; }
 
 <div id="login">
 <input id="email" placeholder="Email">
+<button onclick="logout()">Sair</button>
 <input id="password" type="password" placeholder="Senha">
 <button onclick="login()">Entrar / Criar conta</button>
 </div>
@@ -103,6 +104,11 @@ function carregar(){
 function graf(c){
  new Chart(grafico,{type:"pie",
  data:{labels:Object.keys(c),datasets:[{data:Object.values(c)}]}})
+}
+function logout() {
+  firebase.auth().signOut();
+  document.getElementById("app").style.display = "none";
+  document.getElementById("login").style.display = "block";
 }
 </script>
 </body>
