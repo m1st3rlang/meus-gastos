@@ -2,60 +2,132 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Gestão de Gastos</title>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<!-- Chart -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body { font-family: Arial; background:#f4f6f8; padding:20px; }
-.container { max-width:600px; margin:auto; background:#fff; padding:20px; border-radius:10px; }
-input, select, button { width:100%; padding:10px; margin-top:10px; }
-button { background:black; color:white; border:none; }
-.gasto { display:flex; justify-content:space-between; margin-top:5px; }
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  padding: 20px;
+  font-size: 18px;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+h2 {
+  text-align: center;
+}
+
+input, select, button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  font-size: 17px;
+}
+
+button {
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+
+.gasto {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+/* espaço para botão fixo */
+#app {
+  padding-bottom: 90px;
+}
+
+/* logout fixo */
+#logout-area {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #f4f6f8;
+  padding: 10px 0;
+  text-align: center;
+  border-top: 1px solid #ccc;
+}
+
+#logout-area button {
+  width: 90%;
+  max-width: 300px;
+}
 </style>
 </head>
 
 <body>
+
 <div class="container">
+
 <h2>💰 Gestão de Gastos</h2>
 
+<!-- LOGIN -->
 <div id="login">
-<input id="email" placeholder="Email">
-<input id="password" type="password" placeholder="Senha">
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Palavra-passe">
+  <button onclick="login()">Entrar / Criar conta</button>
+</div>
 
+<!-- APP -->
 <div id="app" style="display:none">
-<button onclick="logout()" style="margin-bottom:15px;">Sair</button>
-<input id="desc" placeholder="Descrição">
-<select id="cat">
-<option>Alimentação</option>
-<option>Transporte</option>
-<option>Renda</option>
-<option>Lazer</option>
-<option>Outros</option>
-</select>
-<input id="val" type="number" placeholder="Valor (€)">
-<button onclick="addGasto()">Adicionar</button>
 
-<h3>Gastos do mês</h3>
-<div id="lista"></div>
-<h3>Total: € <span id="total">0</span></h3>
+  <input id="desc" placeholder="Descrição">
+  
+  <select id="cat">
+    <option>Alimentação</option>
+    <option>Transporte</option>
+    <option>Renda</option>
+    <option>Lazer</option>
+    <option>Outros</option>
+  </select>
 
-<canvas id="grafico"></canvas>
-<div style="margin-top:30px; text-align:center;">
+  <input id="val" type="number" placeholder="Valor (€)">
+  <button onclick="addGasto()">Adicionar gasto</button>
+
+  <h3>Gastos do mês</h3>
+  <div id="lista"></div>
+
+  <h3>Total: € <span id="total">0.00</span></h3>
+
+  <canvas id="grafico"></canvas>
+</div>
+
+</div>
+
+<!-- BOTÃO SAIR FIXO -->
+<div id="logout-area" style="display:none">
   <button onclick="logout()">Sair</button>
 </div>
 
-
-</div>
-
 <script>
+/* 🔐 CONFIG FIREBASE — CONFIRMA QUE É O TEU */
 const firebaseConfig = {
-  apiKey: "AIzaSyA53gz5pwnzSFx4alP2Gb6L7N3qAvXmMdU",
-  authDomain: "controle-financeiro-fafd9.firebaseapp.com",
-  projectId: "controle-financeiro-fafd9",
+  apiKey: "COLOCA_AQUI",
+  authDomain: "COLOCA_AQUI",
+  projectId: "COLOCA_AQUI"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -63,55 +135,93 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 let user;
+let chart;
 
+/* LOGIN STATE */
 auth.onAuthStateChanged(u => {
-  if(u){
+  if (u) {
     user = u;
-    document.getElementById("login").style.display="none";
-    document.getElementById("app").style.display="block";
+    login.style.display = "none";
+    app.style.display = "block";
+    document.getElementById("logout-area").style.display = "block";
     carregar();
+  } else {
+    login.style.display = "block";
+    app.style.display = "none";
+    document.getElementById("logout-area").style.display = "none";
   }
 });
 
-function login(){
+/* LOGIN */
+function login() {
   auth.signInWithEmailAndPassword(email.value, password.value)
-  .catch(()=>auth.createUserWithEmailAndPassword(email.value, password.value));
+    .catch(() => auth.createUserWithEmailAndPassword(email.value, password.value));
 }
 
-function addGasto(){
-  db.collection("gastos").add({
-    uid:user.uid,
-    desc:desc.value,
-    cat:cat.value,
-    val:Number(val.value),
-    mes:new Date().getMonth()
-  });
-  desc.value=""; val.value="";
-}
-
-function carregar(){
-  db.collection("gastos").where("uid","==",user.uid)
-  .onSnapshot(s=>{
-    lista.innerHTML=""; let total=0; let cats={};
-    s.forEach(d=>{
-      let g=d.data(); total+=g.val;
-      cats[g.cat]=(cats[g.cat]||0)+g.val;
-      lista.innerHTML+=`<div class="gasto">${g.desc} €${g.val}</div>`;
-    });
-    document.getElementById("total").innerText = total.toFixed(2);
-    graf(cats);
-  });
-}
-
-function graf(c){
- new Chart(grafico,{type:"pie",
- data:{labels:Object.keys(c),datasets:[{data:Object.values(c)}]}})
-}
+/* LOGOUT */
 function logout() {
-  firebase.auth().signOut();
-  document.getElementById("app").style.display = "none";
-  document.getElementById("login").style.display = "block";
+  auth.signOut();
+}
+
+/* ADD GASTO */
+function addGasto() {
+  if (!desc.value || !val.value) return;
+
+  db.collection("gastos").add({
+    uid: user.uid,
+    desc: desc.value,
+    cat: cat.value,
+    val: Number(val.value),
+    mes: new Date().getMonth()
+  });
+
+  desc.value = "";
+  val.value = "";
+}
+
+/* LOAD GASTOS */
+function carregar() {
+  db.collection("gastos")
+    .where("uid", "==", user.uid)
+    .onSnapshot(snap => {
+
+      lista.innerHTML = "";
+      let total = 0;
+      let cats = {};
+
+      snap.forEach(doc => {
+        const g = doc.data();
+        total += g.val;
+        cats[g.cat] = (cats[g.cat] || 0) + g.val;
+
+        lista.innerHTML += `
+          <div class="gasto">
+            <span>${g.desc}</span>
+            <strong>€${g.val.toFixed(2)}</strong>
+          </div>
+        `;
+      });
+
+      document.getElementById("total").innerText = total.toFixed(2);
+      grafico(cats);
+    });
+}
+
+/* CHART */
+function grafico(cats) {
+  if (chart) chart.destroy();
+
+  chart = new Chart(document.getElementById("grafico"), {
+    type: "pie",
+    data: {
+      labels: Object.keys(cats),
+      datasets: [{
+        data: Object.values(cats)
+      }]
+    }
+  });
 }
 </script>
+
 </body>
 </html>
