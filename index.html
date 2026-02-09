@@ -279,11 +279,14 @@ function toggleDarkMode() {
   document.body.classList.toggle("dark");
 
   const lua = document.getElementById("dark-toggle");
-  if (document.body.classList.contains("dark")) {
-    lua.innerText = "☀️";
-  } else {
-    lua.innerText = "🌙";
-  }
+  const escuro = document.body.classList.contains("dark");
+
+  lua.innerText = escuro ? "☀️" : "🌙";
+  localStorage.setItem("darkMode", escuro);
+}
+if (localStorage.getItem("darkMode") === "true") {
+  document.body.classList.add("dark");
+  document.getElementById("dark-toggle").innerText = "☀️";
 }
 
 
