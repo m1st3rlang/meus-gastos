@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Gestão de Gastos</title>
-<button onclick="toggleDarkMode()" style="margin-bottom:15px;">
-  🌙 Modo escuro
-</button>
+
 
 
 <!-- Firebase -->
@@ -107,8 +105,18 @@ button {
 }
 </style>
 </head>
+#dark-toggle {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  font-size: 22px;
+  cursor: pointer;
+}
+
 
 <body>
+<div id="dark-toggle" onclick="toggleDarkMode()">🌙</div>
+
 
 <div class="container">
 
@@ -266,6 +274,13 @@ function apagarGasto(id) {
 }
 function toggleDarkMode() {
   document.body.classList.toggle("dark");
+
+  const lua = document.getElementById("dark-toggle");
+  if (document.body.classList.contains("dark")) {
+    lua.innerText = "☀️";
+  } else {
+    lua.innerText = "🌙";
+  }
 }
 
 
