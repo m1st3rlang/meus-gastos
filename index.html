@@ -139,16 +139,20 @@ let chart;
 
 /* LOGIN STATE */
 auth.onAuthStateChanged(u => {
+  const loginDiv = document.getElementById("login");
+  const appDiv = document.getElementById("app");
+  const logoutDiv = document.getElementById("logout-area");
+
   if (u) {
     user = u;
-    login.style.display = "none";
-    app.style.display = "block";
-    document.getElementById("logout-area").style.display = "block";
+    loginDiv.style.display = "none";
+    appDiv.style.display = "block";
+    logoutDiv.style.display = "block";
     carregar();
   } else {
-    login.style.display = "block";
-    app.style.display = "none";
-    document.getElementById("logout-area").style.display = "none";
+    loginDiv.style.display = "block";
+    appDiv.style.display = "none";
+    logoutDiv.style.display = "none";
   }
 });
 
