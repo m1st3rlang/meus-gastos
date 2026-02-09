@@ -195,20 +195,20 @@ function carregar() {
 
       snap.forEach(doc => {
         const g = doc.data();
+
         total += g.val;
         cats[g.cat] = (cats[g.cat] || 0) + g.val;
 
         lista.innerHTML += `
-          lista.innerHTML += `
-  <div class="gasto">
-    <span>${g.desc}</span>
-    <span>
-      <strong>€${g.val.toFixed(2)}</strong>
-      <button onclick="apagarGasto('${doc.id}')" style="margin-left:10px;">🗑</button>
-    </span>
-  </div>
-`;
-
+          <div class="gasto">
+            <span>${g.desc}</span>
+            <span>
+              <strong>€${g.val.toFixed(2)}</strong>
+              <button onclick="apagarGasto('${doc.id}')" style="margin-left:10px;">🗑</button>
+            </span>
+          </div>
+        `;
+      });
 
       document.getElementById("total").innerText = total.toFixed(2);
       grafico(cats);
