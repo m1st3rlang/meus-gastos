@@ -36,7 +36,7 @@ h2{text-align:center;}
 
 input,select{
   width:100%;
-  padding:14px;
+  padding:14px 44px 14px 14px; /* espaço para o ícone */
   margin-top:12px;
   border-radius:14px;
   background:var(--input);
@@ -138,15 +138,24 @@ canvas{margin-top:20px;}
 
 <div id="app" style="display:none">
 
-<!-- 📅 SELETOR DE MÊS -->
 <select id="mesSelecionado"></select>
 
-<!-- SALÁRIO -->
+<!-- SALÁRIO (🗑 alinhado à direita) -->
 <div style="position:relative">
   <input id="salario" type="number" placeholder="Salário mensal">
   <button id="clearSalario"
-    style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
-    background:none;border:none;font-size:16px;color:#ff6b6b;cursor:pointer;">🗑</button>
+    style="
+      position:absolute;
+      right:12px;
+      top:50%;
+      transform:translateY(-50%);
+      background:none;
+      border:none;
+      font-size:16px;
+      color:#ff6b6b;
+      cursor:pointer;
+      opacity:.85;
+    ">🗑</button>
 </div>
 
 <div class="dashboard">
@@ -156,7 +165,6 @@ canvas{margin-top:20px;}
 
 <div class="compare" id="comparacao"></div>
 
-<!-- CATEGORIAS -->
 <div class="cat-row">
   <select id="cat"></select>
   <button class="cat-add">+</button>
@@ -197,15 +205,14 @@ darkToggle.onclick=()=>setTheme(!document.body.classList.contains("light"));
 
 /* MESES */
 function carregarMeses(){
-  const select=mesSelecionado;
-  select.innerHTML="";
+  mesSelecionado.innerHTML="";
   const agora=new Date();
   for(let i=0;i<12;i++){
     const d=new Date(agora.getFullYear(),agora.getMonth()-i,1);
     const opt=document.createElement("option");
     opt.value=`${d.getFullYear()}-${d.getMonth()}`;
     opt.textContent=d.toLocaleString("pt-PT",{month:"long",year:"numeric"});
-    select.appendChild(opt);
+    mesSelecionado.appendChild(opt);
   }
 }
 mesSelecionado.onchange=carregar;
@@ -282,7 +289,7 @@ addBtn.onclick=()=>{
   val.value="";desc.value="";
 };
 
-/* LOAD + GRÁFICO + COMPARAÇÃO */
+/* LOAD */
 function carregar(){
   const [ano,mes]=mesSelecionado.value.split("-").map(Number);
   const uid=auth.currentUser.uid;
@@ -299,7 +306,7 @@ function carregar(){
       total+=g.val;
       cats[g.cat]=(cats[g.cat]||0)+g.val;
     });
-    totalElem.innerText=total.toFixed(2);
+    total.innerText=total.toFixed(2);
     gastosResumo.innerText=total.toFixed(2);
     saldoResumo.innerText=((+salario.value||0)-total).toFixed(2);
     desenharGrafico(cats);
