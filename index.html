@@ -33,10 +33,15 @@ body{
   background:var(--bg);
   color:var(--text);
 }
-.app{max-width:420px;margin:auto;padding:20px;}
+.app{
+  max-width:420px;
+  margin:auto;
+  padding:20px;
+  padding-bottom:120px;
+}
 .card{
   background:var(--card);
-  border-radius:20px;
+  border-radius:22px;
   padding:20px;
 }
 h2{text-align:center;}
@@ -51,8 +56,8 @@ input,select{
   color:var(--text);
 }
 
+/* 🔴 NÃO existe mais width:100% aqui */
 button{
-  width:100%;
   padding:14px;
   margin-top:14px;
   border:none;
@@ -62,6 +67,12 @@ button{
   cursor:pointer;
 }
 
+/* Botões grandes */
+.btn-main{
+  width:100%;
+}
+
+/* Gastos */
 .gasto{
   display:flex;
   justify-content:space-between;
@@ -69,13 +80,13 @@ button{
   border-bottom:1px solid var(--border);
 }
 .gasto button{
-  width:auto;
   padding:4px 8px;
   background:#ff6b6b;
   color:white;
   border-radius:6px;
 }
 
+/* Categorias */
 .cat-row{
   display:flex;
   gap:8px;
@@ -83,8 +94,8 @@ button{
 }
 .cat-row select{flex:1;}
 .cat-row button{
-  width:auto;
-  padding:10px 14px;
+  width:42px;
+  height:42px;
   border-radius:50%;
   font-size:18px;
 }
@@ -104,16 +115,23 @@ canvas{margin-top:20px;}
   position:fixed;
   top:16px;
   right:16px;
+  font-size:22px;
   cursor:pointer;
 }
 
+/* ✅ BOTÃO SAIR FINAL */
 #logoutBtn{
   position:fixed;
-  bottom:20px;
+  bottom:22px;
   left:50%;
   transform:translateX(-50%);
-  padding:10px 26px;
+  padding:10px 28px;
   border-radius:999px;
+  background:var(--primary);
+  color:var(--primary-text);
+  font-size:14px;
+  box-shadow:0 10px 25px rgba(0,0,0,.4);
+  width:auto;
 }
 </style>
 </head>
@@ -130,28 +148,24 @@ canvas{margin-top:20px;}
 <div id="login">
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Palavra-passe">
-  <button id="loginBtn">Entrar / Criar conta</button>
+  <button class="btn-main" id="loginBtn">Entrar / Criar conta</button>
 </div>
 
 <div id="app" style="display:none">
 
-<!-- MESES -->
 <select id="mesSelecionado"></select>
 
-<!-- SALÁRIO -->
 <input id="salario" type="number" placeholder="Salário mensal">
 
-<!-- CATEGORIAS -->
 <div class="cat-row">
   <select id="cat"></select>
   <button class="cat-add">+</button>
   <button class="cat-del">×</button>
 </div>
 
-<!-- ADD -->
 <input id="desc" placeholder="Descrição">
 <input id="val" type="number" placeholder="Valor (€)">
-<button id="addBtn">Adicionar gasto</button>
+<button class="btn-main" id="addBtn">Adicionar gasto</button>
 
 <div class="compare" id="comparacao"></div>
 
@@ -179,12 +193,9 @@ const auth=firebase.auth();
 const db=firebase.firestore();
 let chart=null;
 
-/* TEMA */
-darkToggle.onclick=()=>{
-  document.body.classList.toggle("light");
-};
+darkToggle.onclick=()=>document.body.classList.toggle("light");
 
-/* MESES FIXOS */
+/* MESES */
 function carregarMesesFixos(){
   mesSelecionado.innerHTML="";
   const agora=new Date();
@@ -197,10 +208,9 @@ function carregarMesesFixos(){
   }
 }
 
-/* CATEGORIAS DINÂMICAS */
-let categorias = JSON.parse(localStorage.getItem("categorias")) || [
-  "Alimentação","Transporte","Renda","Lazer","Outros"
-];
+/* CATEGORIAS */
+let categorias = JSON.parse(localStorage.getItem("categorias")) ||
+["Alimentação","Transporte","Renda","Lazer","Outros"];
 
 function renderCategorias(){
   cat.innerHTML="";
@@ -213,17 +223,15 @@ function renderCategorias(){
 }
 
 document.querySelector(".cat-add").onclick=()=>{
-  const nome = prompt("Nova categoria:");
+  const nome=prompt("Nova categoria:");
   if(nome && !categorias.includes(nome)){
     categorias.push(nome);
     renderCategorias();
   }
 };
-
 document.querySelector(".cat-del").onclick=()=>{
-  const atual = cat.value;
-  if(confirm(`Apagar categoria "${atual}"?`)){
-    categorias = categorias.filter(c=>c!==atual);
+  if(confirm(`Apagar categoria "${cat.value}"?`)){
+    categorias=categorias.filter(c=>c!==cat.value);
     renderCategorias();
   }
 };
@@ -313,7 +321,6 @@ function apagar(id){
   }
 }
 
-/* GRÁFICO */
 function desenharGrafico(cats){
   if(chart)chart.destroy();
   chart=new Chart(grafico,{
@@ -325,9 +332,8 @@ function desenharGrafico(cats){
   });
 }
 
-/* COMPARAÇÃO */
 async function compararMesAnterior(ano,mes,totalAtual){
-  let pa=ano, pm=mes-1;
+  let pa=ano,pm=mes-1;
   if(pm<0){pm=11;pa--;}
   let totalAnt=0;
   const snap=await db.collection("gastos")
