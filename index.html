@@ -14,25 +14,27 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* ===== TEMA ===== */
+/* ===== TEMAS ===== */
 :root{
-  /* MODO ESCURO (default) */
+  /* ESCURO (default) */
   --bg:#0f0f10;
   --card:#1a1a1c;
   --text:#ffffff;
   --muted:#aaa;
   --primary:#ffffff;
+  --primary-text:#000000;   /* 👈 TEXTO BOTÃO ESCURO */
   --input:#111;
   --border:#333;
 }
 
-/* MODO CLARO ROXO */
+/* CLARO ROXO */
 .light{
-  --bg:#f3efff;        /* fundo roxo claro */
-  --card:#ffffff;     /* cards brancos */
-  --text:#2b1d4f;     /* roxo escuro */
-  --muted:#6b5ca5;    /* roxo suave */
-  --primary:#6c4cff;  /* roxo principal */
+  --bg:#f3efff;
+  --card:#ffffff;
+  --text:#2b1d4f;
+  --muted:#6b5ca5;
+  --primary:#6c4cff;
+  --primary-text:#ffffff;  /* 👈 TEXTO BOTÃO CLARO */
   --input:#ffffff;
   --border:#d8d0ff;
 }
@@ -60,6 +62,7 @@ body{
 
 h2{text-align:center;}
 
+/* CAMPOS */
 input,select{
   width:100%;
   padding:14px;
@@ -71,6 +74,7 @@ input,select{
   font-size:15px;
 }
 
+/* BOTÕES */
 button{
   width:100%;
   padding:14px;
@@ -83,11 +87,7 @@ button{
 
 .btn-main{
   background:var(--primary);
-  color:#fff;
-}
-
-.light .btn-main{
-  color:#fff;
+  color:var(--primary-text); /* 👈 CORRIGIDO */
 }
 
 .btn-light{
@@ -96,7 +96,7 @@ button{
   font-size:14px;
 }
 
-/* ===== LISTA ===== */
+/* LISTA */
 .lista{margin-top:10px;}
 
 .gasto-card{
@@ -123,24 +123,14 @@ button{
   color:var(--muted);
 }
 
-.gasto-desc{
-  font-size:15px;
-}
-
 .apagar{
   background:none;
   border:none;
   color:var(--muted);
   cursor:pointer;
-  opacity:.6;
 }
 
-.apagar:hover{
-  opacity:1;
-  color:#ff4d4d;
-}
-
-/* ===== BOTÕES FIXOS ===== */
+/* BOTÕES FIXOS */
 #darkToggle{
   position:fixed;
   top:16px;
@@ -155,7 +145,7 @@ button{
   padding:10px 28px;
   border-radius:999px;
   background:var(--primary);
-  color:#fff;
+  color:var(--primary-text); /* 👈 CORRIGIDO */
   font-size:14px;
   position:fixed;
   bottom:24px;
@@ -218,76 +208,67 @@ button{
 <button id="logoutBtn" style="display:none">Sair</button>
 
 <script>
-/* FIREBASE */
 firebase.initializeApp({
   apiKey:"AIzaSyA53gz5pwnzSFx4alP2Gb6L7N3qAvXmMdU",
   authDomain:"controle-financeiro-fafd9.firebaseapp.com",
   projectId:"controle-financeiro-fafd9"
 });
+const auth=firebase.auth();
+const db=firebase.firestore();
 
-const auth = firebase.auth();
-const db = firebase.firestore();
+const loginDiv=document.getElementById("login");
+const appDiv=document.getElementById("app");
+const logoutBtn=document.getElementById("logoutBtn");
+const darkToggle=document.getElementById("darkToggle");
 
-/* ELEMENTOS */
-const loginDiv = document.getElementById("login");
-const appDiv = document.getElementById("app");
-const logoutBtn = document.getElementById("logoutBtn");
-const darkToggle = document.getElementById("darkToggle");
+const loginBtn=document.getElementById("loginBtn");
+const addBtn=document.getElementById("addBtn");
+const addCatBtn=document.getElementById("addCatBtn");
 
-const loginBtn = document.getElementById("loginBtn");
-const addBtn = document.getElementById("addBtn");
-const addCatBtn = document.getElementById("addCatBtn");
+let user=null;
+let chart=null;
 
-let user = null;
-let chart = null;
-
-/* ===== MODO CLARO / ESCURO ===== */
+/* TEMA */
 function setTheme(isLight){
-  document.body.classList.toggle("light", isLight);
-  darkToggle.innerText = isLight ? "🌙" : "☀️";
-  localStorage.setItem("light", isLight);
+  document.body.classList.toggle("light",isLight);
+  darkToggle.innerText=isLight?"🌙":"☀️";
+  localStorage.setItem("light",isLight);
 }
-setTheme(localStorage.getItem("light") === "true");
+setTheme(localStorage.getItem("light")==="true");
+darkToggle.onclick=()=>setTheme(!document.body.classList.contains("light"));
 
-darkToggle.onclick = () => {
-  setTheme(!document.body.classList.contains("light"));
-};
-
-/* ===== AUTH ===== */
+/* AUTH */
 auth.onAuthStateChanged(u=>{
   if(u){
-    user = u;
-    loginDiv.style.display = "none";
-    appDiv.style.display = "block";
-    logoutBtn.style.display = "block";
+    user=u;
+    loginDiv.style.display="none";
+    appDiv.style.display="block";
+    logoutBtn.style.display="block";
     carregarMeses();
     carregarCategorias();
     carregar();
   }else{
-    user = null;
-    loginDiv.style.display = "block";
-    appDiv.style.display = "none";
-    logoutBtn.style.display = "none";
+    loginDiv.style.display="block";
+    appDiv.style.display="none";
+    logoutBtn.style.display="none";
   }
 });
 
-loginBtn.onclick = () => {
-  auth.signInWithEmailAndPassword(email.value, password.value)
-    .catch(() => auth.createUserWithEmailAndPassword(email.value, password.value));
+loginBtn.onclick=()=>{
+  auth.signInWithEmailAndPassword(email.value,password.value)
+  .catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
 };
+logoutBtn.onclick=()=>auth.signOut();
 
-logoutBtn.onclick = () => auth.signOut();
-
-/* ===== CATEGORIAS ===== */
+/* CATEGORIAS */
 function carregarCategorias(){
   const base=["Alimentação","Transporte","Renda","Lazer","Outros"];
   const cats=JSON.parse(localStorage.getItem("cats"))||base;
   cat.innerHTML="";
   cats.forEach(c=>cat.innerHTML+=`<option>${c}</option>`);
 }
-
-addCatBtn.onclick = () => {
-  if(!novaCat.value) return;
+addCatBtn.onclick=()=>{
+  if(!novaCat.value)return;
   const cats=JSON.parse(localStorage.getItem("cats"))||[];
   cats.push(novaCat.value);
   localStorage.setItem("cats",JSON.stringify(cats));
@@ -295,20 +276,18 @@ addCatBtn.onclick = () => {
   carregarCategorias();
 };
 
-/* ===== MESES ===== */
+/* MESES */
 function carregarMeses(){
   mesSelecionado.innerHTML="";
   const ano=new Date().getFullYear();
   const meses=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  meses.forEach((m,i)=>{
-    mesSelecionado.innerHTML+=`<option value="${ano}-${i}">${m} ${ano}</option>`;
-  });
+  meses.forEach((m,i)=>mesSelecionado.innerHTML+=`<option value="${ano}-${i}">${m} ${ano}</option>`);
 }
-mesSelecionado.onchange = carregar;
+mesSelecionado.onchange=carregar;
 
-/* ===== GASTOS ===== */
-addBtn.onclick = () => {
-  if(!val.value || !user) return;
+/* GASTOS */
+addBtn.onclick=()=>{
+  if(!val.value||!user)return;
   const d=new Date();
   db.collection("gastos").add({
     uid:user.uid,
@@ -319,47 +298,44 @@ addBtn.onclick = () => {
     mes:d.getMonth(),
     ano:d.getFullYear()
   });
-  val.value=""; desc.value="";
+  val.value="";desc.value="";
 };
 
 function carregar(){
   const [ano,mes]=mesSelecionado.value.split("-").map(Number);
   db.collection("gastos")
-    .where("uid","==",user.uid)
-    .where("ano","==",ano)
-    .where("mes","==",mes)
-    .onSnapshot(s=>{
-      lista.innerHTML="";
-      let totalMes=0;
-      let cats={};
-
-      s.forEach(d=>{
-        const g=d.data();
-        totalMes+=g.val;
-        cats[g.cat]=(cats[g.cat]||0)+g.val;
-
-        lista.innerHTML+=`
-          <div class="gasto-card">
-            <div class="gasto-info">
-              <span class="gasto-cat">${g.cat}</span>
-              <span class="gasto-desc">${g.desc}</span>
-            </div>
-            <div>
-              <strong>${g.moeda}${g.val.toFixed(2)}</strong>
-              <button class="apagar" onclick="db.collection('gastos').doc('${d.id}').delete()">🗑</button>
-            </div>
-          </div>`;
-      });
-
-      total.innerText=totalMes.toFixed(2);
-      desenharGrafico(cats);
-      compararMeses(ano,mes,totalMes);
+  .where("uid","==",user.uid)
+  .where("ano","==",ano)
+  .where("mes","==",mes)
+  .onSnapshot(s=>{
+    lista.innerHTML="";
+    let totalMes=0;
+    let cats={};
+    s.forEach(d=>{
+      const g=d.data();
+      totalMes+=g.val;
+      cats[g.cat]=(cats[g.cat]||0)+g.val;
+      lista.innerHTML+=`
+        <div class="gasto-card">
+          <div class="gasto-info">
+            <span class="gasto-cat">${g.cat}</span>
+            <span>${g.desc}</span>
+          </div>
+          <div>
+            <strong>${g.moeda}${g.val.toFixed(2)}</strong>
+            <button class="apagar" onclick="db.collection('gastos').doc('${d.id}').delete()">🗑</button>
+          </div>
+        </div>`;
     });
+    total.innerText=totalMes.toFixed(2);
+    desenharGrafico(cats);
+    compararMeses(ano,mes,totalMes);
+  });
 }
 
-/* ===== GRÁFICO ===== */
+/* GRÁFICO */
 function desenharGrafico(cats){
-  if(chart) chart.destroy();
+  if(chart)chart.destroy();
   chart=new Chart(grafico,{
     type:"doughnut",
     data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats)}]},
@@ -367,22 +343,21 @@ function desenharGrafico(cats){
   });
 }
 
-/* ===== COMPARAÇÃO ===== */
+/* COMPARAÇÃO */
 function compararMeses(a,m,atual){
   if(m===0){comparacao.innerText="";return;}
   db.collection("gastos")
-    .where("uid","==",user.uid)
-    .where("ano","==",a)
-    .where("mes","==",m-1)
-    .get().then(s=>{
-      let ant=0;
-      s.forEach(d=>ant+=d.data().val);
-      const diff=atual-ant;
-      comparacao.innerText =
-        diff>=0
-          ? `↑ Gastaste +${diff.toFixed(2)} que o mês passado`
-          : `↓ Gastaste ${Math.abs(diff).toFixed(2)} a menos que o mês passado`;
-    });
+  .where("uid","==",user.uid)
+  .where("ano","==",a)
+  .where("mes","==",m-1)
+  .get().then(s=>{
+    let ant=0;s.forEach(d=>ant+=d.data().val);
+    const diff=atual-ant;
+    comparacao.innerText=
+      diff>=0
+        ?`↑ Gastaste +${diff.toFixed(2)} que o mês passado`
+        :`↓ Gastaste ${Math.abs(diff).toFixed(2)} a menos que o mês passado`;
+  });
 }
 </script>
 
