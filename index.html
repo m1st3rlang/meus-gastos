@@ -102,6 +102,23 @@ button{
   left:50%;
   transform:translateX(-50%);
 }
+
+.cat-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.cat-row button{
+  width:auto;
+  padding:10px 14px;
+  font-size:18px;
+  border-radius:50%;
+}
+
+.cat-add{background:#4caf50;color:white;}
+.cat-del{background:#ff6b6b;color:white;}
+
 canvas{margin-top:20px;}
 </style>
 </head>
@@ -138,7 +155,12 @@ canvas{margin-top:20px;}
 
 <div class="compare" id="comparacao"></div>
 
-<select id="cat"></select>
+<!-- CATEGORIAS -->
+<div class="cat-row">
+  <select id="cat"></select>
+  <button class="cat-add" title="Adicionar categoria">+</button>
+  <button class="cat-del" title="Apagar categoria">×</button>
+</div>
 
 <input id="desc" placeholder="Descrição">
 <input id="val" type="number" placeholder="Valor (€)">
@@ -161,7 +183,6 @@ firebase.initializeApp({
   projectId:"controle-financeiro-fafd9"
 });
 const auth=firebase.auth(), db=firebase.firestore();
-
 let chart=null;
 
 /* TEMA */
@@ -174,15 +195,34 @@ setTheme(localStorage.getItem("light")==="true");
 darkToggle.onclick=()=>setTheme(!document.body.classList.contains("light"));
 
 /* CATEGORIAS */
-const categorias=["Alimentação","Transporte","Renda","Lazer","Outros"];
-function carregarCategorias(){
+let categorias = JSON.parse(localStorage.getItem("categorias")) ||
+["Alimentação","Transporte","Renda","Lazer","Outros"];
+
+function renderCategorias(){
   cat.innerHTML="";
   categorias.forEach(c=>{
     const o=document.createElement("option");
     o.textContent=c;
     cat.appendChild(o);
   });
+  localStorage.setItem("categorias",JSON.stringify(categorias));
 }
+
+document.querySelector(".cat-add").onclick=()=>{
+  const nome=prompt("Nova categoria:");
+  if(nome && !categorias.includes(nome)){
+    categorias.push(nome);
+    renderCategorias();
+  }
+};
+
+document.querySelector(".cat-del").onclick=()=>{
+  const atual=cat.value;
+  if(confirm(`Apagar categoria "${atual}"?`)){
+    categorias=categorias.filter(c=>c!==atual);
+    renderCategorias();
+  }
+};
 
 /* AUTH */
 auth.onAuthStateChanged(u=>{
@@ -191,7 +231,7 @@ auth.onAuthStateChanged(u=>{
     app.style.display="block";
     logoutBtn.style.display="block";
     salario.value=localStorage.getItem("salario")||"";
-    carregarCategorias();
+    renderCategorias();
     carregar();
   }else{
     login.style.display="block";
@@ -245,7 +285,6 @@ function carregar(){
       total+=g.val;
       cats[g.cat]=(cats[g.cat]||0)+g.val;
     });
-    totalSpan=total;
     totalElem.innerText=total.toFixed(2);
     gastosResumo.innerText=total.toFixed(2);
     const sal=+salario.value||0;
@@ -253,7 +292,6 @@ function carregar(){
     desenharGrafico(cats);
   });
 
-  /* comparação */
   const prev=new Date(now.getFullYear(),now.getMonth()-1,1);
   let prevTotal=0;
   db.collection("gastos")
