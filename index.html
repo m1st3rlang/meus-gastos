@@ -73,15 +73,28 @@ button{
   color:var(--primary-text);
 }
 
+.dashboard{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:14px;
+}
+.dashboard div{
+  background:rgba(255,255,255,.06);
+  padding:14px;
+  border-radius:14px;
+  text-align:center;
+}
+.light .dashboard div{
+  background:#f6f4ff;
+}
+
 .gasto{
   display:flex;
   justify-content:space-between;
   align-items:center;
   padding:12px 0;
   border-bottom:1px solid var(--border);
-}
-.gasto span{
-  font-size:14px;
 }
 .gasto button{
   width:auto;
@@ -136,6 +149,14 @@ button{
 <!-- MESES -->
 <select id="mesSelecionado"></select>
 
+<!-- SALÁRIO -->
+<input id="salario" type="number" placeholder="Salário mensal">
+
+<div class="dashboard">
+  <div>💸 Gastos<br><strong id="gastosResumo">0.00</strong></div>
+  <div>🟢 Saldo<br><strong id="saldoResumo">0.00</strong></div>
+</div>
+
 <!-- ADD -->
 <input id="desc" placeholder="Descrição">
 <input id="val" type="number" placeholder="Valor (€)">
@@ -171,7 +192,7 @@ function setTheme(light){
 setTheme(localStorage.getItem("light")==="true");
 darkToggle.onclick = () => setTheme(!document.body.classList.contains("light"));
 
-/* MESES (a partir dos dados existentes) */
+/* MESES */
 async function carregarMeses(uid){
   const snap = await db.collection("gastos")
     .where("uid","==",uid)
@@ -202,6 +223,7 @@ auth.onAuthStateChanged(async u=>{
     login.style.display="none";
     app.style.display="block";
     logoutBtn.style.display="block";
+    salario.value = localStorage.getItem("salario") || "";
     await carregarMeses(u.uid);
     carregar();
   }else{
@@ -216,6 +238,12 @@ loginBtn.onclick=()=>auth
   .catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
 
 logoutBtn.onclick=()=>auth.signOut();
+
+/* SALÁRIO */
+salario.onchange = () => {
+  localStorage.setItem("salario", salario.value);
+  carregar();
+};
 
 /* ADD */
 addBtn.onclick=()=>{
@@ -255,7 +283,10 @@ function carregar(){
             </span>
           </div>`;
       });
-      totalSpan.innerText=total.toFixed(2);
+      total.innerText=total.toFixed(2);
+      gastosResumo.innerText=total.toFixed(2);
+      const sal = +salario.value || 0;
+      saldoResumo.innerText = (sal - total).toFixed(2);
     });
 }
 
