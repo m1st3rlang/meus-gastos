@@ -134,6 +134,10 @@ button {
 
 <!-- APP -->
 <div id="app" style="display:none">
+<select id="mesSelecionado" onchange="carregar()">
+  <option value="">Mês atual</option>
+</select>
+
 
   <input id="desc" placeholder="Descrição">
   
@@ -189,6 +193,9 @@ auth.onAuthStateChanged(u => {
     loginDiv.style.display = "none";
     appDiv.style.display = "block";
     logoutDiv.style.display = "block";
+carregarMeses();
+carregar();
+
     carregar();
   } else {
     loginDiv.style.display = "block";
@@ -212,23 +219,37 @@ function logout() {
 function addGasto() {
   if (!desc.value || !val.value) return;
 
-  db.collection("gastos").add({
-    uid: user.uid,
-    desc: desc.value,
-    cat: cat.value,
-    val: Number(val.value),
-    mes: new Date().getMonth()
-  });
+  const data = new Date();
 
-  desc.value = "";
-  val.value = "";
-}
+db.collection("gastos").add({
+  uid: user.uid,
+  desc: desc.value,
+  cat: cat.value,
+  val: Number(val.value),
+  mes: data.getMonth(),
+  ano: data.getFullYear()
+});
+
+desc.value = "";
+val.value = "";
+
 
 /* LOAD GASTOS */
 function carregar() {
-  db.collection("gastos")
-    .where("uid", "==", user.uid)
-    .onSnapshot(snap => {
+  let query = db.collection("gastos").where("uid", "==", user.uid);
+
+const mesSelecionado = document.getElementById("mesSelecionado").value;
+
+if (mesSelecionado) {
+  const partes = mesSelecionado.split("-");
+  const ano = Number(partes[0]);
+  const mes = Number(partes[1]);
+
+  query = query
+    .where("ano", "==", ano)
+    .where("mes", "==", mes);
+}
+  .onSnapshot(snap => {
 
       lista.innerHTML = "";
       let total = 0;
@@ -287,6 +308,23 @@ function toggleDarkMode() {
 if (localStorage.getItem("darkMode") === "true") {
   document.body.classList.add("dark");
   document.getElementById("dark-toggle").innerText = "☀️";
+}
+function carregarMeses() {
+  const select = document.getElementById("mesSelecionado");
+  const agora = new Date();
+  const ano = agora.getFullYear();
+
+  const meses = [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+  ];
+
+  meses.forEach((nome, index) => {
+    const option = document.createElement("option");
+    option.value = `${ano}-${index}`;
+    option.text = `${nome} ${ano}`;
+    select.appendChild(option);
+  });
 }
 
 
