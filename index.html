@@ -104,7 +104,7 @@ button{
 .compare{
   margin-top:12px;
   font-size:14px;
-  opacity:.85;
+  opacity:.9;
   text-align:center;
 }
 
@@ -150,7 +150,7 @@ button{
 
 <select id="mesSelecionado"></select>
 
-<!-- SALÁRIO (mantido + botões) -->
+<!-- SALÁRIO -->
 <div class="row">
   <input id="salario" type="number" placeholder="Salário mensal" disabled>
   <button class="icon-btn add" id="salAdd">+</button>
@@ -164,7 +164,7 @@ button{
   <option value="R$">Real (R$)</option>
 </select>
 
-<!-- ✅ CATEGORIAS RESTAURADAS -->
+<!-- CATEGORIAS -->
 <div class="row">
   <select id="cat"></select>
   <button class="icon-btn add" id="catAdd">+</button>
@@ -175,6 +175,7 @@ button{
 <input id="val" type="number" placeholder="Valor">
 <button class="btn-main" id="addBtn">Adicionar gasto</button>
 
+<!-- ✅ COMPARAÇÃO DE MESES -->
 <div class="compare" id="comparacao"></div>
 
 <h3>Gastos do mês</h3>
@@ -202,7 +203,7 @@ let chart=null;
 
 darkToggle.onclick=()=>document.body.classList.toggle("light");
 
-/* ===== CATEGORIAS (100% FUNCIONAIS) ===== */
+/* ===== CATEGORIAS ===== */
 let categorias = JSON.parse(localStorage.getItem("categorias")) ||
 ["Alimentação","Transporte","Renda","Lazer","Outros"];
 
@@ -232,33 +233,32 @@ catDel.onclick=()=>{
 };
 
 /* ===== SALÁRIO ===== */
-const salarioInput = salario;
 function carregarSalario(){
   const s=localStorage.getItem("salario");
   if(s){
-    salarioInput.value=s;
-    salarioInput.disabled=true;
+    salario.value=s;
+    salario.disabled=true;
   }else{
-    salarioInput.value="";
-    salarioInput.disabled=false;
+    salario.value="";
+    salario.disabled=false;
   }
 }
 salAdd.onclick=()=>{
-  if(salarioInput.value){
-    localStorage.setItem("salario",salarioInput.value);
-    salarioInput.disabled=true;
+  if(salario.value){
+    localStorage.setItem("salario",salario.value);
+    salario.disabled=true;
     carregar();
   }
 };
 salEdit.onclick=()=>{
-  salarioInput.disabled=false;
-  salarioInput.focus();
+  salario.disabled=false;
+  salario.focus();
 };
 salDel.onclick=()=>{
   if(confirm("Apagar salário mensal?")){
     localStorage.removeItem("salario");
-    salarioInput.value="";
-    salarioInput.disabled=false;
+    salario.value="";
+    salario.disabled=false;
     carregar();
   }
 };
@@ -297,6 +297,102 @@ function carregarMeses(){
     o.textContent=d.toLocaleString("pt-PT",{month:"long",year:"numeric"});
     mesSelecionado.appendChild(o);
   }
+}
+mesSelecionado.onchange=carregar;
+
+/* ===== MOEDA ===== */
+let moedaAtual = localStorage.getItem("moeda") || "€";
+moeda.value = moedaAtual;
+moeda.onchange=()=>{
+  moedaAtual=moeda.value;
+  localStorage.setItem("moeda",moedaAtual);
+  carregar();
+};
+
+/* ===== ADD GASTO ===== */
+addBtn.onclick=()=>{
+  if(!val.value)return;
+  const [ano,mes]=mesSelecionado.value.split("-").map(Number);
+  db.collection("gastos").add({
+    uid:auth.currentUser.uid,
+    desc:desc.value,
+    cat:cat.value,
+    val:+val.value,
+    ano,mes
+  });
+  desc.value="";
+  val.value="";
+};
+
+/* ===== LOAD ===== */
+async function carregar(){
+  if(!auth.currentUser)return;
+
+  const [ano,mes]=mesSelecionado.value.split("-").map(Number);
+  let total=0;
+  let cats={};
+  lista.innerHTML="";
+
+  const snap=await db.collection("gastos")
+    .where("uid","==",auth.currentUser.uid)
+    .where("ano","==",ano)
+    .where("mes","==",mes)
+    .get();
+
+  snap.forEach(doc=>{
+    const g=doc.data();
+    total+=g.val;
+    cats[g.cat]=(cats[g.cat]||0)+g.val;
+    lista.innerHTML+=`
+      <div class="gasto">
+        <span>${g.desc}</span>
+        <span>
+          ${moedaAtual} ${g.val.toFixed(2)}
+          <button onclick="apagar('${doc.id}')">🗑</button>
+        </span>
+      </div>`;
+  });
+
+  totalSpan.innerText=`${moedaAtual} ${total.toFixed(2)}`;
+  desenharGrafico(cats);
+  compararMesAnterior(ano,mes,total);
+}
+
+function apagar(id){
+  if(confirm("Apagar este gasto?")){
+    db.collection("gastos").doc(id).delete().then(carregar);
+  }
+}
+
+const totalSpan=document.getElementById("total");
+
+/* ===== GRÁFICO ===== */
+function desenharGrafico(cats){
+  if(chart)chart.destroy();
+  chart=new Chart(grafico,{
+    type:"doughnut",
+    data:{
+      labels:Object.keys(cats),
+      datasets:[{data:Object.values(cats)}]
+    }
+  });
+}
+
+/* ===== COMPARAÇÃO ===== */
+async function compararMesAnterior(ano,mes,totalAtual){
+  let pa=ano,pm=mes-1;
+  if(pm<0){pm=11;pa--;}
+  let totalAnt=0;
+  const snap=await db.collection("gastos")
+    .where("uid","==",auth.currentUser.uid)
+    .where("ano","==",pa)
+    .where("mes","==",pm)
+    .get();
+  snap.forEach(d=>totalAnt+=d.data().val);
+
+  const diff=totalAtual-totalAnt;
+  comparacao.innerText=
+    `Mês anterior: ${moedaAtual} ${totalAnt.toFixed(2)} | Diferença: ${diff>=0?"↑":"↓"} ${moedaAtual} ${Math.abs(diff).toFixed(2)}`;
 }
 </script>
 
