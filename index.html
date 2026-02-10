@@ -27,7 +27,7 @@ body {
   margin: auto;
   background: #fff;
   padding: 20px;
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
 h2 {
@@ -51,19 +51,21 @@ input, select {
   background: black;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
 }
 
-/* LISTA */
+/* LISTA DE GASTOS */
 .gasto {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
 }
 
-/* BOTÃO APAGAR */
+/* BOTÃO APAGAR (ESCONDIDO) */
 .btn-apagar {
   background: transparent;
   border: none;
@@ -71,6 +73,12 @@ input, select {
   cursor: pointer;
   color: #999;
   padding: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.gasto:hover .btn-apagar {
+  opacity: 1;
 }
 
 .btn-apagar:hover {
@@ -79,30 +87,27 @@ input, select {
 
 /* APP */
 #app {
-  padding-bottom: 90px;
+  padding-bottom: 120px;
 }
 
-/* LOGOUT */
+/* LOGOUT FLUTUANTE */
 #logout-area {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background: #f4f6f8;
-  padding: 8px 0;
-  text-align: center;
-  border-top: 1px solid #ccc;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: transparent;
 }
 
 .btn-logout {
-  width: auto;
-  padding: 10px 30px;
-  font-size: 15px;
-  border-radius: 20px;
+  padding: 12px 30px;
+  font-size: 14px;
+  border-radius: 30px;
   background: black;
   color: white;
   border: none;
   cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
 }
 
 /* DARK MODE */
@@ -122,18 +127,17 @@ input, select {
   border: 1px solid #444;
 }
 
+.dark .gasto {
+  border-bottom: 1px solid #333;
+}
+
 .dark .btn-principal,
 .dark .btn-logout {
   background: white;
   color: black;
 }
 
-.dark #logout-area {
-  background: #121212;
-  border-top: 1px solid #333;
-}
-
-/* LUA */
+/* BOTÃO LUA */
 #dark-toggle {
   position: fixed;
   top: 15px;
@@ -289,7 +293,7 @@ function carregar() {
       `;
     });
 
-    total.innerText = total.toFixed(2);
+    document.getElementById("total").innerText = total.toFixed(2);
     desenharGrafico(cats);
   });
 }
