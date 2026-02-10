@@ -8,16 +8,25 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 :root{
-  --bg:#0f0f10; --card:#1a1a1c; --text:#fff; --muted:#aaa;
-  --primary:#fff; --primary-text:#000; --input:#111; --border:#333;
+  --bg:#0f0f10;
+  --card:#1a1a1c;
+  --text:#ffffff;
+  --muted:#aaa;
+  --primary:#ffffff;
+  --primary-text:#000;
+  --border:#333;
 }
 .light{
-  --bg:#f3efff; --card:#fff; --text:#2b1d4f; --muted:#6b5ca5;
-  --primary:#6c4cff; --primary-text:#fff; --input:#fff; --border:#d8d0ff;
+  --bg:#f3efff;
+  --card:#ffffff;
+  --text:#2b1d4f;
+  --muted:#6b5ca5;
+  --primary:#6c4cff;
+  --primary-text:#fff;
+  --border:#d8d0ff;
 }
 body{
   margin:0;
@@ -25,21 +34,25 @@ body{
   background:var(--bg);
   color:var(--text);
 }
-.app{max-width:420px;margin:auto;padding:20px;}
+.app{
+  max-width:420px;
+  margin:auto;
+  padding:20px;
+}
 .card{
   background:var(--card);
   border-radius:20px;
   padding:20px;
   box-shadow:0 15px 40px rgba(0,0,0,.25);
 }
-h2{text-align:center;}
+h2{text-align:center;margin-bottom:20px;}
 
-input,select{
+input, select{
   width:100%;
-  padding:14px 44px 14px 14px; /* espaço para o ícone */
+  padding:14px;
   margin-top:12px;
   border-radius:14px;
-  background:var(--input);
+  background:transparent;
   border:1px solid var(--border);
   color:var(--text);
   font-size:15px;
@@ -60,25 +73,23 @@ button{
   color:var(--primary-text);
 }
 
-.dashboard{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-top:10px;
+.gasto{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 0;
+  border-bottom:1px solid var(--border);
 }
-.dashboard div{
-  background:rgba(255,255,255,.06);
-  padding:14px;
-  border-radius:14px;
-  text-align:center;
-}
-.light .dashboard div{background:#f6f4ff;}
-
-.compare{
-  margin-top:14px;
+.gasto span{
   font-size:14px;
-  text-align:center;
-  color:var(--muted);
+}
+.gasto button{
+  width:auto;
+  padding:6px 10px;
+  font-size:14px;
+  border-radius:8px;
+  background:#ff6b6b;
+  color:white;
 }
 
 #darkToggle{
@@ -102,22 +113,6 @@ button{
   left:50%;
   transform:translateX(-50%);
 }
-
-.cat-row{
-  display:flex;
-  gap:8px;
-  align-items:center;
-}
-.cat-row button{
-  width:auto;
-  padding:10px 14px;
-  font-size:18px;
-  border-radius:50%;
-}
-.cat-add{background:#4caf50;color:white;}
-.cat-del{background:#ff6b6b;color:white;}
-
-canvas{margin-top:20px;}
 </style>
 </head>
 
@@ -138,46 +133,18 @@ canvas{margin-top:20px;}
 
 <div id="app" style="display:none">
 
+<!-- MESES -->
 <select id="mesSelecionado"></select>
 
-<!-- SALÁRIO (🗑 alinhado à direita) -->
-<div style="position:relative">
-  <input id="salario" type="number" placeholder="Salário mensal">
-  <button id="clearSalario"
-    style="
-      position:absolute;
-      right:12px;
-      top:50%;
-      transform:translateY(-50%);
-      background:none;
-      border:none;
-      font-size:16px;
-      color:#ff6b6b;
-      cursor:pointer;
-      opacity:.85;
-    ">🗑</button>
-</div>
-
-<div class="dashboard">
-  <div>💸 Gastos<br><strong id="gastosResumo">0.00</strong></div>
-  <div>🟢 Saldo<br><strong id="saldoResumo">0.00</strong></div>
-</div>
-
-<div class="compare" id="comparacao"></div>
-
-<div class="cat-row">
-  <select id="cat"></select>
-  <button class="cat-add">+</button>
-  <button class="cat-del">×</button>
-</div>
-
+<!-- ADD -->
 <input id="desc" placeholder="Descrição">
 <input id="val" type="number" placeholder="Valor (€)">
 <button class="btn-main" id="addBtn">Adicionar gasto</button>
 
-<h3>Total do mês: € <span id="total">0.00</span></h3>
+<h3 style="margin-top:20px">Gastos do mês</h3>
+<div id="lista"></div>
 
-<canvas id="grafico"></canvas>
+<h3>Total: € <span id="total">0.00</span></h3>
 
 </div>
 </div>
@@ -191,69 +158,51 @@ firebase.initializeApp({
   authDomain:"controle-financeiro-fafd9.firebaseapp.com",
   projectId:"controle-financeiro-fafd9"
 });
-const auth=firebase.auth(), db=firebase.firestore();
-let chart=null;
+
+const auth = firebase.auth();
+const db = firebase.firestore();
 
 /* TEMA */
 function setTheme(light){
   document.body.classList.toggle("light",light);
-  darkToggle.innerText=light?"🌙":"☀️";
+  darkToggle.innerText = light ? "🌙" : "☀️";
   localStorage.setItem("light",light);
 }
 setTheme(localStorage.getItem("light")==="true");
-darkToggle.onclick=()=>setTheme(!document.body.classList.contains("light"));
+darkToggle.onclick = () => setTheme(!document.body.classList.contains("light"));
 
-/* MESES */
-function carregarMeses(){
+/* MESES (a partir dos dados existentes) */
+async function carregarMeses(uid){
+  const snap = await db.collection("gastos")
+    .where("uid","==",uid)
+    .get();
+
+  const set = new Set();
+  snap.forEach(d=>{
+    const g=d.data();
+    set.add(`${g.ano}-${g.mes}`);
+  });
+
+  const meses=[...set].sort((a,b)=>b.localeCompare(a));
   mesSelecionado.innerHTML="";
-  const agora=new Date();
-  for(let i=0;i<12;i++){
-    const d=new Date(agora.getFullYear(),agora.getMonth()-i,1);
+
+  meses.forEach(v=>{
+    const [ano,mes]=v.split("-").map(Number);
+    const d=new Date(ano,mes,1);
     const opt=document.createElement("option");
-    opt.value=`${d.getFullYear()}-${d.getMonth()}`;
+    opt.value=v;
     opt.textContent=d.toLocaleString("pt-PT",{month:"long",year:"numeric"});
     mesSelecionado.appendChild(opt);
-  }
-}
-mesSelecionado.onchange=carregar;
-
-/* CATEGORIAS */
-let categorias=JSON.parse(localStorage.getItem("categorias"))||
-["Alimentação","Transporte","Renda","Lazer","Outros"];
-
-function renderCategorias(){
-  cat.innerHTML="";
-  categorias.forEach(c=>{
-    const o=document.createElement("option");
-    o.textContent=c;
-    cat.appendChild(o);
   });
-  localStorage.setItem("categorias",JSON.stringify(categorias));
 }
-
-document.querySelector(".cat-add").onclick=()=>{
-  const nome=prompt("Nova categoria:");
-  if(nome && !categorias.includes(nome)){
-    categorias.push(nome);
-    renderCategorias();
-  }
-};
-document.querySelector(".cat-del").onclick=()=>{
-  if(confirm(`Apagar categoria "${cat.value}"?`)){
-    categorias=categorias.filter(c=>c!==cat.value);
-    renderCategorias();
-  }
-};
 
 /* AUTH */
-auth.onAuthStateChanged(u=>{
+auth.onAuthStateChanged(async u=>{
   if(u){
     login.style.display="none";
     app.style.display="block";
     logoutBtn.style.display="block";
-    salario.value=localStorage.getItem("salario")||"";
-    carregarMeses();
-    renderCategorias();
+    await carregarMeses(u.uid);
     carregar();
   }else{
     login.style.display="block";
@@ -261,19 +210,12 @@ auth.onAuthStateChanged(u=>{
     logoutBtn.style.display="none";
   }
 });
-loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value)
-.catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
-logoutBtn.onclick=()=>auth.signOut();
 
-/* SALÁRIO */
-salario.onchange=()=>localStorage.setItem("salario",salario.value);
-clearSalario.onclick=()=>{
-  if(confirm("Queres apagar o salário mensal?")){
-    localStorage.removeItem("salario");
-    salario.value="";
-    carregar();
-  }
-};
+loginBtn.onclick=()=>auth
+  .signInWithEmailAndPassword(email.value,password.value)
+  .catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
+
+logoutBtn.onclick=()=>auth.signOut();
 
 /* ADD */
 addBtn.onclick=()=>{
@@ -281,44 +223,48 @@ addBtn.onclick=()=>{
   const [ano,mes]=mesSelecionado.value.split("-").map(Number);
   db.collection("gastos").add({
     uid:auth.currentUser.uid,
-    cat:cat.value,
     desc:desc.value,
     val:+val.value,
-    mes, ano
+    ano, mes
   });
-  val.value="";desc.value="";
+  desc.value=""; val.value="";
 };
 
 /* LOAD */
 function carregar(){
   const [ano,mes]=mesSelecionado.value.split("-").map(Number);
-  const uid=auth.currentUser.uid;
-  let total=0,cats={};
+  let total=0;
+  lista.innerHTML="";
 
   db.collection("gastos")
-  .where("uid","==",uid)
-  .where("ano","==",ano)
-  .where("mes","==",mes)
-  .onSnapshot(s=>{
-    total=0; cats={};
-    s.forEach(d=>{
-      const g=d.data();
-      total+=g.val;
-      cats[g.cat]=(cats[g.cat]||0)+g.val;
+    .where("uid","==",auth.currentUser.uid)
+    .where("ano","==",ano)
+    .where("mes","==",mes)
+    .onSnapshot(s=>{
+      total=0;
+      lista.innerHTML="";
+      s.forEach(doc=>{
+        const g=doc.data();
+        total+=g.val;
+        lista.innerHTML+=`
+          <div class="gasto">
+            <span>${g.desc}</span>
+            <span>
+              €${g.val.toFixed(2)}
+              <button onclick="apagar('${doc.id}')">🗑</button>
+            </span>
+          </div>`;
+      });
+      totalSpan.innerText=total.toFixed(2);
     });
-    total.innerText=total.toFixed(2);
-    gastosResumo.innerText=total.toFixed(2);
-    saldoResumo.innerText=((+salario.value||0)-total).toFixed(2);
-    desenharGrafico(cats);
-  });
 }
 
-function desenharGrafico(cats){
-  if(chart)chart.destroy();
-  chart=new Chart(grafico,{
-    type:"doughnut",
-    data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats)}]}
-  });
+mesSelecionado.onchange=carregar;
+
+function apagar(id){
+  if(confirm("Queres apagar este gasto?")){
+    db.collection("gastos").doc(id).delete();
+  }
 }
 </script>
 
