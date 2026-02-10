@@ -14,143 +14,97 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* BASE */
 body {
   font-family: Arial, sans-serif;
-  background: #f4f6f8;
+  background: #121212;
   padding: 20px;
   font-size: 18px;
+  color: #fff;
 }
 
 .container {
   max-width: 600px;
   margin: auto;
-  background: #fff;
+  background: #1e1e1e;
   padding: 20px;
   border-radius: 14px;
 }
 
-h2 {
+h2, h3 {
   text-align: center;
 }
 
-/* CAMPOS */
 input, select {
   width: 100%;
   padding: 14px;
   margin-top: 12px;
-  font-size: 17px;
+  font-size: 16px;
+  background: #2a2a2a;
+  color: #fff;
+  border: 1px solid #444;
 }
 
-/* BOTÕES GRANDES */
-.btn-principal {
-  width: 100%;
-  padding: 14px;
+button {
   margin-top: 12px;
-  font-size: 17px;
-  background: black;
-  color: white;
+  padding: 14px;
+  width: 100%;
   border: none;
   border-radius: 10px;
+  font-size: 16px;
   cursor: pointer;
 }
 
-/* LISTA DE GASTOS */
+.btn-main {
+  background: #fff;
+  color: #000;
+}
+
+.btn-small {
+  background: #333;
+  color: #fff;
+  font-size: 14px;
+}
+
 .gasto {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-top: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #eee;
+  margin-top: 10px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 6px;
 }
 
-/* BOTÃO APAGAR (ESCONDIDO) */
-.btn-apagar {
+.apagar {
   background: transparent;
+  color: #888;
   border: none;
-  font-size: 16px;
   cursor: pointer;
-  color: #999;
-  padding: 4px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
 }
 
-.gasto:hover .btn-apagar {
-  opacity: 1;
+.apagar:hover {
+  color: #ff5252;
 }
 
-.btn-apagar:hover {
-  color: #e74c3c;
-}
-
-/* APP */
-#app {
-  padding-bottom: 120px;
-}
-
-/* LOGOUT FLUTUANTE */
-#logout-area {
+#logout {
   position: fixed;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: transparent;
-}
-
-.btn-logout {
-  padding: 12px 30px;
-  font-size: 14px;
+  background: #fff;
+  color: #000;
+  padding: 10px 30px;
   border-radius: 30px;
-  background: black;
-  color: white;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  font-size: 14px;
 }
 
-/* DARK MODE */
-.dark {
-  background: #121212;
-  color: #fff;
-}
-
-.dark .container {
-  background: #1e1e1e;
-}
-
-.dark input,
-.dark select {
-  background: #2a2a2a;
-  color: white;
-  border: 1px solid #444;
-}
-
-.dark .gasto {
-  border-bottom: 1px solid #333;
-}
-
-.dark .btn-principal,
-.dark .btn-logout {
-  background: white;
-  color: black;
-}
-
-/* BOTÃO LUA */
-#dark-toggle {
-  position: fixed;
-  top: 15px;
-  right: 15px;
-  font-size: 22px;
-  cursor: pointer;
+.compare {
+  margin-top: 20px;
+  font-size: 15px;
+  text-align: center;
 }
 </style>
 </head>
 
 <body>
-
-<div id="dark-toggle" onclick="toggleDarkMode()">🌙</div>
 
 <div class="container">
 
@@ -160,43 +114,48 @@ input, select {
 <div id="login">
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Palavra-passe">
-  <button class="btn-principal" onclick="login()">Entrar / Criar conta</button>
+  <button class="btn-main" onclick="login()">Entrar / Criar conta</button>
 </div>
 
 <!-- APP -->
 <div id="app" style="display:none">
 
-  <select id="mesSelecionado" onchange="carregar()">
-    <option value="">Mês atual</option>
+  <!-- MÊS -->
+  <select id="mesSelecionado" onchange="carregar()"></select>
+
+  <!-- MOEDA -->
+  <select id="moeda">
+    <option value="€">Euro (€)</option>
+    <option value="$">Dólar ($)</option>
+    <option value="£">Libra (£)</option>
   </select>
 
+  <!-- CATEGORIA -->
+  <select id="cat"></select>
+
+  <input id="novaCat" placeholder="Nova categoria">
+  <button class="btn-small" onclick="addCategoria()">Adicionar categoria</button>
+
+  <!-- DESCRIÇÃO -->
   <input id="desc" placeholder="Descrição">
 
-  <select id="cat">
-    <option>Alimentação</option>
-    <option>Transporte</option>
-    <option>Renda</option>
-    <option>Lazer</option>
-    <option>Outros</option>
-  </select>
+  <!-- VALOR -->
+  <input id="val" type="number" placeholder="Valor">
 
-  <input id="val" type="number" placeholder="Valor (€)">
-  <button class="btn-principal" onclick="addGasto()">Adicionar gasto</button>
+  <button class="btn-main" onclick="addGasto()">Adicionar gasto</button>
 
   <h3>Gastos do mês</h3>
   <div id="lista"></div>
 
-  <h3>Total: € <span id="total">0.00</span></h3>
+  <h3>Total: <span id="total">0.00</span></h3>
 
-  <canvas id="grafico"></canvas>
+  <div class="compare" id="comparacao"></div>
+
 </div>
 
 </div>
 
-<!-- LOGOUT -->
-<div id="logout-area" style="display:none">
-  <button class="btn-logout" onclick="logout()">Sair</button>
-</div>
+<button id="logout" onclick="logout()" style="display:none">Sair</button>
 
 <script>
 const firebaseConfig = {
@@ -209,141 +168,118 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let user = null;
-let chart = null;
+let user;
 
-const loginDiv = document.getElementById("login");
-const appDiv = document.getElementById("app");
-const logoutDiv = document.getElementById("logout-area");
-
+// AUTH
 auth.onAuthStateChanged(u => {
   if (u) {
     user = u;
-    loginDiv.style.display = "none";
-    appDiv.style.display = "block";
-    logoutDiv.style.display = "block";
+    login.style.display = "none";
+    app.style.display = "block";
+    logout.style.display = "block";
     carregarMeses();
+    carregarCategorias();
     carregar();
-  } else {
-    user = null;
-    loginDiv.style.display = "block";
-    appDiv.style.display = "none";
-    logoutDiv.style.display = "none";
   }
 });
 
+// LOGIN / LOGOUT
 function login() {
   auth.signInWithEmailAndPassword(email.value, password.value)
-    .catch(() =>
-      auth.createUserWithEmailAndPassword(email.value, password.value)
-    );
+    .catch(() => auth.createUserWithEmailAndPassword(email.value, password.value));
 }
 
 function logout() {
   auth.signOut();
 }
 
-function addGasto() {
-  if (!desc.value || !val.value || !user) return;
+// CATEGORIAS
+function carregarCategorias() {
+  const cats = JSON.parse(localStorage.getItem("cats")) || [
+    "Alimentação","Transporte","Renda","Lazer","Outros"
+  ];
+  cat.innerHTML = "";
+  cats.forEach(c => cat.innerHTML += `<option>${c}</option>`);
+}
 
-  const data = new Date();
+function addCategoria() {
+  if (!novaCat.value) return;
+  const cats = JSON.parse(localStorage.getItem("cats")) || [];
+  cats.push(novaCat.value);
+  localStorage.setItem("cats", JSON.stringify(cats));
+  novaCat.value = "";
+  carregarCategorias();
+}
+
+// GASTOS
+function addGasto() {
+  if (!val.value || !user) return;
+  const d = new Date();
 
   db.collection("gastos").add({
     uid: user.uid,
-    desc: desc.value,
     cat: cat.value,
+    desc: desc.value,
     val: Number(val.value),
-    mes: data.getMonth(),
-    ano: data.getFullYear()
+    moeda: moeda.value,
+    mes: d.getMonth(),
+    ano: d.getFullYear()
   });
 
-  desc.value = "";
   val.value = "";
+  desc.value = "";
 }
 
-function carregar() {
-  let query = db.collection("gastos").where("uid", "==", user.uid);
-
-  const mesSelecionado = document.getElementById("mesSelecionado").value;
-  if (mesSelecionado) {
-    const partes = mesSelecionado.split("-");
-    query = query
-      .where("ano", "==", Number(partes[0]))
-      .where("mes", "==", Number(partes[1]));
-  }
-
-  query.onSnapshot(snap => {
-    lista.innerHTML = "";
-    let total = 0;
-    let cats = {};
-
-    snap.forEach(doc => {
-      const g = doc.data();
-      total += g.val;
-      cats[g.cat] = (cats[g.cat] || 0) + g.val;
-
-      lista.innerHTML += `
-        <div class="gasto">
-          <span>${g.desc}</span>
-          <span>
-            <strong>€${g.val.toFixed(2)}</strong>
-            <button class="btn-apagar" onclick="apagarGasto('${doc.id}')">🗑</button>
-          </span>
-        </div>
-      `;
-    });
-
-    document.getElementById("total").innerText = total.toFixed(2);
-    desenharGrafico(cats);
-  });
-}
-
-function apagarGasto(id) {
-  if (confirm("Queres apagar este gasto?")) {
-    db.collection("gastos").doc(id).delete();
-  }
-}
-
-function desenharGrafico(cats) {
-  if (chart) chart.destroy();
-  chart = new Chart(grafico, {
-    type: "pie",
-    data: {
-      labels: Object.keys(cats),
-      datasets: [{ data: Object.values(cats) }]
-    }
-  });
-}
-
-function toggleDarkMode() {
-  document.body.classList.toggle("dark");
-  const lua = document.getElementById("dark-toggle");
-  const escuro = document.body.classList.contains("dark");
-  lua.innerText = escuro ? "☀️" : "🌙";
-  localStorage.setItem("darkMode", escuro);
-}
-
-if (localStorage.getItem("darkMode") === "true") {
-  document.body.classList.add("dark");
-  document.getElementById("dark-toggle").innerText = "☀️";
-}
-
+// MESES
 function carregarMeses() {
-  const select = document.getElementById("mesSelecionado");
-  select.innerHTML = '<option value="">Mês atual</option>';
-
+  mesSelecionado.innerHTML = "";
   const ano = new Date().getFullYear();
-  const meses = [
-    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
-  ];
+  const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  meses.forEach((m,i)=> mesSelecionado.innerHTML += `<option value="${ano}-${i}">${m} ${ano}</option>`);
+}
 
-  meses.forEach((nome, index) => {
-    const option = document.createElement("option");
-    option.value = `${ano}-${index}`;
-    option.text = `${nome} ${ano}`;
-    select.appendChild(option);
-  });
+// CARREGAR + COMPARAR
+function carregar() {
+  const [ano,mes] = mesSelecionado.value.split("-").map(Number);
+
+  db.collection("gastos")
+    .where("uid","==",user.uid)
+    .where("ano","==",ano)
+    .where("mes","==",mes)
+    .onSnapshot(snap=>{
+      lista.innerHTML="";
+      let total=0;
+      snap.forEach(d=>{
+        const g=d.data();
+        total+=g.val;
+        lista.innerHTML+=`
+          <div class="gasto">
+            <span>${g.cat} • ${g.desc}</span>
+            <span>${g.moeda}${g.val.toFixed(2)}
+              <button class="apagar" onclick="db.collection('gastos').doc('${d.id}').delete()">🗑</button>
+            </span>
+          </div>`;
+      });
+      totalSpan.innerText = total.toFixed(2);
+      compararMeses(ano,mes,total);
+    });
+}
+
+function compararMeses(ano,mes,atual){
+  const prev = mes-1;
+  if(prev<0) return;
+  db.collection("gastos")
+    .where("uid","==",user.uid)
+    .where("ano","==",ano)
+    .where("mes","==",prev)
+    .get().then(s=>{
+      let ant=0;
+      s.forEach(d=> ant+=d.data().val);
+      const diff = atual-ant;
+      comparacao.innerText =
+        diff>=0 ? `↑ Gastaste +${diff.toFixed(2)} que o mês passado`
+                : `↓ Gastaste ${Math.abs(diff).toFixed(2)} a menos`;
+    });
 }
 </script>
 
