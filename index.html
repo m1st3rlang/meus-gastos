@@ -8,6 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 :root{
@@ -75,6 +76,17 @@ button{
   border-radius:6px;
 }
 
+.compare{
+  margin-top:12px;
+  font-size:14px;
+  opacity:.85;
+  text-align:center;
+}
+
+canvas{
+  margin-top:20px;
+}
+
 #darkToggle{
   position:fixed;
   top:16px;
@@ -110,19 +122,34 @@ button{
 
 <div id="app" style="display:none">
 
-<!-- ✅ MESES FIXOS -->
+<!-- MESES (como antes) -->
 <select id="mesSelecionado"></select>
 
+<!-- SALÁRIO (mantido) -->
 <input id="salario" type="number" placeholder="Salário mensal">
 
+<!-- CATEGORIA -->
+<select id="cat">
+  <option>Alimentação</option>
+  <option>Transporte</option>
+  <option>Renda</option>
+  <option>Lazer</option>
+  <option>Outros</option>
+</select>
+
+<!-- ADD -->
 <input id="desc" placeholder="Descrição">
 <input id="val" type="number" placeholder="Valor (€)">
 <button id="addBtn">Adicionar gasto</button>
+
+<div class="compare" id="comparacao"></div>
 
 <h3>Gastos do mês</h3>
 <div id="lista"></div>
 
 <h3>Total: € <span id="total">0.00</span></h3>
+
+<canvas id="grafico"></canvas>
 
 </div>
 </div>
@@ -139,13 +166,14 @@ firebase.initializeApp({
 
 const auth=firebase.auth();
 const db=firebase.firestore();
+let chart=null;
 
 /* TEMA */
 darkToggle.onclick=()=>{
   document.body.classList.toggle("light");
 };
 
-/* ✅ MESES SIMPLES (COMO ERA ANTES) */
+/* MESES FIXOS */
 function carregarMesesFixos(){
   mesSelecionado.innerHTML="";
   const agora=new Date();
@@ -164,6 +192,7 @@ auth.onAuthStateChanged(u=>{
     login.style.display="none";
     app.style.display="block";
     logoutBtn.style.display="block";
+    salario.value=localStorage.getItem("salario")||"";
     carregarMesesFixos();
     carregar();
   }else{
@@ -179,6 +208,12 @@ loginBtn.onclick=()=>auth
 
 logoutBtn.onclick=()=>auth.signOut();
 
+/* SALÁRIO */
+salario.onchange=()=>{
+  localStorage.setItem("salario",salario.value);
+  carregar();
+};
+
 /* ADD */
 addBtn.onclick=()=>{
   if(!val.value)return;
@@ -186,6 +221,7 @@ addBtn.onclick=()=>{
   db.collection("gastos").add({
     uid:auth.currentUser.uid,
     desc:desc.value,
+    cat:cat.value,
     val:+val.value,
     ano,mes
   });
@@ -196,6 +232,7 @@ addBtn.onclick=()=>{
 function carregar(){
   const [ano,mes]=mesSelecionado.value.split("-").map(Number);
   let total=0;
+  let cats={};
   lista.innerHTML="";
 
   db.collection("gastos")
@@ -204,10 +241,12 @@ function carregar(){
     .where("mes","==",mes)
     .onSnapshot(s=>{
       total=0;
+      cats={};
       lista.innerHTML="";
       s.forEach(doc=>{
         const g=doc.data();
         total+=g.val;
+        cats[g.cat]=(cats[g.cat]||0)+g.val;
         lista.innerHTML+=`
           <div class="gasto">
             <span>${g.desc}</span>
@@ -218,6 +257,8 @@ function carregar(){
           </div>`;
       });
       total.innerText=total.toFixed(2);
+      desenharGrafico(cats);
+      compararMesAnterior(ano,mes,total);
     });
 }
 
@@ -227,6 +268,34 @@ function apagar(id){
   if(confirm("Apagar este gasto?")){
     db.collection("gastos").doc(id).delete();
   }
+}
+
+/* GRÁFICO */
+function desenharGrafico(cats){
+  if(chart)chart.destroy();
+  chart=new Chart(grafico,{
+    type:"doughnut",
+    data:{
+      labels:Object.keys(cats),
+      datasets:[{data:Object.values(cats)}]
+    }
+  });
+}
+
+/* COMPARAÇÃO */
+async function compararMesAnterior(ano,mes,totalAtual){
+  let pa=ano, pm=mes-1;
+  if(pm<0){pm=11;pa--;}
+  let totalAnt=0;
+  const snap=await db.collection("gastos")
+    .where("uid","==",auth.currentUser.uid)
+    .where("ano","==",pa)
+    .where("mes","==",pm)
+    .get();
+  snap.forEach(d=>totalAnt+=d.data().val);
+  const diff=totalAtual-totalAnt;
+  comparacao.innerText=
+    `Mês anterior: € ${totalAnt.toFixed(2)} | Diferença: ${diff>=0?"↑":"↓"} € ${Math.abs(diff).toFixed(2)}`;
 }
 </script>
 
