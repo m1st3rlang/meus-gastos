@@ -14,7 +14,6 @@
   --bg:#0f0f10;
   --card:#1a1a1c;
   --text:#ffffff;
-  --muted:#aaa;
   --primary:#ffffff;
   --primary-text:#000;
   --border:#333;
@@ -23,7 +22,6 @@
   --bg:#f3efff;
   --card:#ffffff;
   --text:#2b1d4f;
-  --muted:#6b5ca5;
   --primary:#6c4cff;
   --primary-text:#fff;
   --border:#d8d0ff;
@@ -34,20 +32,15 @@ body{
   background:var(--bg);
   color:var(--text);
 }
-.app{
-  max-width:420px;
-  margin:auto;
-  padding:20px;
-}
+.app{max-width:420px;margin:auto;padding:20px;}
 .card{
   background:var(--card);
   border-radius:20px;
   padding:20px;
-  box-shadow:0 15px 40px rgba(0,0,0,.25);
 }
-h2{text-align:center;margin-bottom:20px;}
+h2{text-align:center;}
 
-input, select{
+input,select{
   width:100%;
   padding:14px;
   margin-top:12px;
@@ -55,7 +48,6 @@ input, select{
   background:transparent;
   border:1px solid var(--border);
   color:var(--text);
-  font-size:15px;
 }
 
 button{
@@ -64,67 +56,39 @@ button{
   margin-top:14px;
   border:none;
   border-radius:16px;
-  font-size:15px;
-  cursor:pointer;
-}
-
-.btn-main{
   background:var(--primary);
   color:var(--primary-text);
-}
-
-.dashboard{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-top:14px;
-}
-.dashboard div{
-  background:rgba(255,255,255,.06);
-  padding:14px;
-  border-radius:14px;
-  text-align:center;
-}
-.light .dashboard div{
-  background:#f6f4ff;
+  cursor:pointer;
 }
 
 .gasto{
   display:flex;
   justify-content:space-between;
-  align-items:center;
-  padding:12px 0;
+  padding:10px 0;
   border-bottom:1px solid var(--border);
 }
 .gasto button{
   width:auto;
-  padding:6px 10px;
-  font-size:14px;
-  border-radius:8px;
+  padding:4px 8px;
   background:#ff6b6b;
   color:white;
+  border-radius:6px;
 }
 
 #darkToggle{
   position:fixed;
   top:16px;
   right:16px;
-  font-size:22px;
   cursor:pointer;
 }
 
 #logoutBtn{
-  width:auto;
-  min-width:120px;
-  padding:10px 28px;
-  border-radius:999px;
-  background:var(--primary);
-  color:var(--primary-text);
-  font-size:14px;
   position:fixed;
-  bottom:24px;
+  bottom:20px;
   left:50%;
   transform:translateX(-50%);
+  padding:10px 26px;
+  border-radius:999px;
 }
 </style>
 </head>
@@ -141,28 +105,21 @@ button{
 <div id="login">
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Palavra-passe">
-  <button class="btn-main" id="loginBtn">Entrar / Criar conta</button>
+  <button id="loginBtn">Entrar / Criar conta</button>
 </div>
 
 <div id="app" style="display:none">
 
-<!-- MESES -->
+<!-- ✅ MESES FIXOS -->
 <select id="mesSelecionado"></select>
 
-<!-- SALÁRIO -->
 <input id="salario" type="number" placeholder="Salário mensal">
 
-<div class="dashboard">
-  <div>💸 Gastos<br><strong id="gastosResumo">0.00</strong></div>
-  <div>🟢 Saldo<br><strong id="saldoResumo">0.00</strong></div>
-</div>
-
-<!-- ADD -->
 <input id="desc" placeholder="Descrição">
 <input id="val" type="number" placeholder="Valor (€)">
-<button class="btn-main" id="addBtn">Adicionar gasto</button>
+<button id="addBtn">Adicionar gasto</button>
 
-<h3 style="margin-top:20px">Gastos do mês</h3>
+<h3>Gastos do mês</h3>
 <div id="lista"></div>
 
 <h3>Total: € <span id="total">0.00</span></h3>
@@ -180,51 +137,34 @@ firebase.initializeApp({
   projectId:"controle-financeiro-fafd9"
 });
 
-const auth = firebase.auth();
-const db = firebase.firestore();
+const auth=firebase.auth();
+const db=firebase.firestore();
 
 /* TEMA */
-function setTheme(light){
-  document.body.classList.toggle("light",light);
-  darkToggle.innerText = light ? "🌙" : "☀️";
-  localStorage.setItem("light",light);
-}
-setTheme(localStorage.getItem("light")==="true");
-darkToggle.onclick = () => setTheme(!document.body.classList.contains("light"));
+darkToggle.onclick=()=>{
+  document.body.classList.toggle("light");
+};
 
-/* MESES */
-async function carregarMeses(uid){
-  const snap = await db.collection("gastos")
-    .where("uid","==",uid)
-    .get();
-
-  const set = new Set();
-  snap.forEach(d=>{
-    const g=d.data();
-    set.add(`${g.ano}-${g.mes}`);
-  });
-
-  const meses=[...set].sort((a,b)=>b.localeCompare(a));
+/* ✅ MESES SIMPLES (COMO ERA ANTES) */
+function carregarMesesFixos(){
   mesSelecionado.innerHTML="";
-
-  meses.forEach(v=>{
-    const [ano,mes]=v.split("-").map(Number);
-    const d=new Date(ano,mes,1);
+  const agora=new Date();
+  for(let i=0;i<12;i++){
+    const d=new Date(agora.getFullYear(),agora.getMonth()-i,1);
     const opt=document.createElement("option");
-    opt.value=v;
+    opt.value=`${d.getFullYear()}-${d.getMonth()}`;
     opt.textContent=d.toLocaleString("pt-PT",{month:"long",year:"numeric"});
     mesSelecionado.appendChild(opt);
-  });
+  }
 }
 
 /* AUTH */
-auth.onAuthStateChanged(async u=>{
+auth.onAuthStateChanged(u=>{
   if(u){
     login.style.display="none";
     app.style.display="block";
     logoutBtn.style.display="block";
-    salario.value = localStorage.getItem("salario") || "";
-    await carregarMeses(u.uid);
+    carregarMesesFixos();
     carregar();
   }else{
     login.style.display="block";
@@ -239,12 +179,6 @@ loginBtn.onclick=()=>auth
 
 logoutBtn.onclick=()=>auth.signOut();
 
-/* SALÁRIO */
-salario.onchange = () => {
-  localStorage.setItem("salario", salario.value);
-  carregar();
-};
-
 /* ADD */
 addBtn.onclick=()=>{
   if(!val.value)return;
@@ -253,9 +187,9 @@ addBtn.onclick=()=>{
     uid:auth.currentUser.uid,
     desc:desc.value,
     val:+val.value,
-    ano, mes
+    ano,mes
   });
-  desc.value=""; val.value="";
+  desc.value="";val.value="";
 };
 
 /* LOAD */
@@ -284,16 +218,13 @@ function carregar(){
           </div>`;
       });
       total.innerText=total.toFixed(2);
-      gastosResumo.innerText=total.toFixed(2);
-      const sal = +salario.value || 0;
-      saldoResumo.innerText = (sal - total).toFixed(2);
     });
 }
 
 mesSelecionado.onchange=carregar;
 
 function apagar(id){
-  if(confirm("Queres apagar este gasto?")){
+  if(confirm("Apagar este gasto?")){
     db.collection("gastos").doc(id).delete();
   }
 }
