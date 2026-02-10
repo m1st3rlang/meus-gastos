@@ -11,7 +11,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* === TUDO IGUAL AO QUE JÁ ESTAVA === */
 :root{
   --bg:#0f0f10;
   --card:#1a1a1c;
@@ -202,14 +201,12 @@ darkToggle.onclick=()=>{
     document.body.classList.contains("light") ? "🌙" : "☀️";
 };
 
-/* === MESES CORRIGIDOS === */
+/* === 12 MESES SEMPRE === */
 function carregarMeses(){
   mesSelecionado.innerHTML="";
-  const now = new Date();
-  const anoAtual = now.getFullYear() < 2026 ? 2026 : now.getFullYear();
-  const mesAtual = now.getMonth();
+  const anoAtual = new Date().getFullYear() < 2026 ? 2026 : new Date().getFullYear();
 
-  for(let m = mesAtual; m >= 0; m--){
+  for(let m = 0; m < 12; m++){
     const d = new Date(anoAtual, m, 1);
     const o = document.createElement("option");
     o.value = `${d.getFullYear()}-${d.getMonth()}`;
@@ -218,7 +215,6 @@ function carregarMeses(){
   }
 }
 
-/* === RESTO DO JS IGUAL AO QUE JÁ FUNCIONAVA === */
 auth.onAuthStateChanged(u=>{
   if(u){
     login.style.display="none";
