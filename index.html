@@ -19,19 +19,100 @@
   --bg:#f3efff;--card:#fff;--text:#2b1d4f;--muted:#6b5ca5;
   --primary:#6c4cff;--primary-text:#fff;
 }
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI";background:var(--bg);color:var(--text);}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
 .app{max-width:420px;margin:auto;padding:20px;}
 .card{background:var(--card);border-radius:20px;padding:20px;}
-input,select,button{width:100%;padding:14px;margin-top:12px;border-radius:14px;border:1px solid #333;background:#111;color:var(--text);}
-.light input,.light select{background:#fff;border-color:#ddd;}
-.btn-main{background:var(--primary);color:var(--primary-text);border:none;}
-.btn-danger{background:none;border:none;color:#ff6b6b;font-size:14px;cursor:pointer;margin-top:6px;}
-#darkToggle{position:fixed;top:16px;right:16px;font-size:22px;cursor:pointer;}
-#logoutBtn{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 28px;border-radius:999px;background:var(--primary);color:var(--primary-text);border:none;}
+h2{text-align:center;}
+
+input,select{
+  width:100%;
+  padding:14px;
+  margin-top:12px;
+  border-radius:14px;
+  border:1px solid #333;
+  background:#111;
+  color:var(--text);
+}
+.light input,.light select{
+  background:#fff;border-color:#ddd;
+}
+
+.btn-main{
+  width:100%;
+  padding:14px;
+  margin-top:16px;
+  border:none;
+  border-radius:16px;
+  background:var(--primary);
+  color:var(--primary-text);
+  font-size:15px;
+  cursor:pointer;
+}
+
+/* ===== CATEGORIA ===== */
+.cat-row{
+  position:relative;
+}
+.delete-cat{
+  position:absolute;
+  right:12px;
+  top:50%;
+  transform:translateY(-50%);
+  background:none;
+  border:none;
+  font-size:16px;
+  color:#ff6b6b;
+  cursor:pointer;
+  display:none;
+}
+.delete-cat:hover{opacity:.7}
+
+/* ===== BOTÕES FIXOS ===== */
+#darkToggle{
+  position:fixed;
+  top:16px;
+  right:16px;
+  font-size:22px;
+  cursor:pointer;
+}
+#logoutBtn{
+  position:fixed;
+  bottom:24px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:10px 26px;
+  border-radius:999px;
+  background:var(--primary);
+  color:var(--primary-text);
+  border:none;
+  font-size:14px;
+  cursor:pointer;
+  width:auto;            /* 👈 importante */
+}
+
+/* LISTA */
 .lista{margin-top:10px;}
-.gasto-card{display:flex;justify-content:space-between;align-items:center;padding:14px;margin-top:10px;background:rgba(255,255,255,0.05);border-radius:14px;}
+.gasto-card{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px;
+  margin-top:10px;
+  background:rgba(255,255,255,.05);
+  border-radius:14px;
+}
 .light .gasto-card{background:#f6f4ff;}
-.apagar{background:none;border:none;color:var(--muted);cursor:pointer;}
+.apagar{
+  background:none;
+  border:none;
+  color:var(--muted);
+  cursor:pointer;
+}
 </style>
 </head>
 
@@ -61,8 +142,10 @@ input,select,button{width:100%;padding:14px;margin-top:12px;border-radius:14px;b
   <option value="£">Libra (£)</option>
 </select>
 
-<select id="cat"></select>
-<button id="deleteCatBtn" class="btn-danger" style="display:none">❌ Apagar categoria</button>
+<div class="cat-row">
+  <select id="cat"></select>
+  <button id="deleteCatBtn" class="delete-cat">🗑</button>
+</div>
 
 <input id="desc" placeholder="Descrição">
 <input id="val" type="number" placeholder="Valor">
@@ -90,7 +173,11 @@ firebase.initializeApp({
 });
 const auth=firebase.auth(), db=firebase.firestore();
 
-/* TEMA */
+const baseCats=["Alimentação","Transporte","Renda","Lazer","Outros"];
+function getCats(){return JSON.parse(localStorage.getItem("cats"))||baseCats;}
+function saveCats(c){localStorage.setItem("cats",JSON.stringify(c));}
+
+/* THEME */
 function setTheme(l){
   document.body.classList.toggle("light",l);
   darkToggle.innerText=l?"🌙":"☀️";
@@ -117,18 +204,13 @@ loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value)
 logoutBtn.onclick=()=>auth.signOut();
 
 /* CATEGORIAS */
-const baseCats=["Alimentação","Transporte","Renda","Lazer","Outros"];
-function getCats(){return JSON.parse(localStorage.getItem("cats"))||baseCats;}
-function saveCats(c){localStorage.setItem("cats",JSON.stringify(c));}
-
 function carregarCategorias(){
   const c=getCats();
   cat.innerHTML="";
   c.forEach(x=>cat.innerHTML+=`<option>${x}</option>`);
   cat.innerHTML+=`<option value="__add">➕ Adicionar categoria</option>`;
-  verificarDelete();
+  updateDeleteCat();
 }
-
 cat.onchange=()=>{
   if(cat.value==="__add"){
     const nome=prompt("Nome da nova categoria:");
@@ -137,14 +219,12 @@ cat.onchange=()=>{
       carregarCategorias(); cat.value=nome;
     }else cat.selectedIndex=0;
   }
-  verificarDelete();
+  updateDeleteCat();
 };
-
-function verificarDelete(){
+function updateDeleteCat(){
   deleteCatBtn.style.display=
     baseCats.includes(cat.value)||cat.value==="__add"?"none":"block";
 }
-
 deleteCatBtn.onclick=()=>{
   if(confirm(`Queres apagar a categoria "${cat.value}"?`)){
     saveCats(getCats().filter(c=>c!==cat.value));
@@ -161,7 +241,7 @@ function carregarMeses(){
 }
 mesSelecionado.onchange=carregar;
 
-/* APAGAR GASTO COM CONFIRMAÇÃO */
+/* APAGAR GASTO */
 function apagarGasto(id){
   if(confirm("Tens a certeza que queres apagar este gasto?")){
     db.collection("gastos").doc(id).delete();
