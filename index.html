@@ -3,10 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Gestão de Gastos</title>
-
-
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -17,32 +14,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-.dark {
-  background: #121212;
-  color: #ffffff;
-}
-
-.dark .container {
-  background: #1e1e1e;
-}
-
-.dark input,
-.dark select {
-  background: #2a2a2a;
-  color: white;
-  border: 1px solid #444;
-}
-
-.dark button {
-  background: #ffffff;
-  color: #000000;
-}
-
-.dark #logout-area {
-  background: #121212;
-  border-top: 1px solid #333;
-}
-
 body {
   font-family: Arial, sans-serif;
   background: #f4f6f8;
@@ -74,6 +45,7 @@ button {
   color: white;
   border: none;
   border-radius: 6px;
+  cursor: pointer;
 }
 
 .gasto {
@@ -82,12 +54,11 @@ button {
   margin-top: 8px;
 }
 
-/* espaço para botão fixo */
 #app {
   padding-bottom: 90px;
 }
 
-/* logout fixo */
+/* LOGOUT FIXO */
 #logout-area {
   position: fixed;
   bottom: 0;
@@ -103,6 +74,35 @@ button {
   width: 90%;
   max-width: 300px;
 }
+
+/* DARK MODE */
+.dark {
+  background: #121212;
+  color: #fff;
+}
+
+.dark .container {
+  background: #1e1e1e;
+}
+
+.dark input,
+.dark select {
+  background: #2a2a2a;
+  color: white;
+  border: 1px solid #444;
+}
+
+.dark button {
+  background: white;
+  color: black;
+}
+
+.dark #logout-area {
+  background: #121212;
+  border-top: 1px solid #333;
+}
+
+/* BOTÃO LUA */
 #dark-toggle {
   position: fixed;
   top: 15px;
@@ -110,16 +110,12 @@ button {
   font-size: 22px;
   cursor: pointer;
 }
-
 </style>
-
-
 </head>
 
-
 <body>
-<div id="dark-toggle" onclick="toggleDarkMode()">🌙</div>
 
+<div id="dark-toggle" onclick="toggleDarkMode()">🌙</div>
 
 <div class="container">
 
@@ -134,13 +130,13 @@ button {
 
 <!-- APP -->
 <div id="app" style="display:none">
-<select id="mesSelecionado" onchange="carregar()">
-  <option value="">Mês atual</option>
-</select>
 
+  <select id="mesSelecionado" onchange="carregar()">
+    <option value="">Mês atual</option>
+  </select>
 
   <input id="desc" placeholder="Descrição">
-  
+
   <select id="cat">
     <option>Alimentação</option>
     <option>Transporte</option>
@@ -162,161 +158,147 @@ button {
 
 </div>
 
-<!-- BOTÃO SAIR FIXO -->
 <div id="logout-area" style="display:none">
   <button onclick="logout()">Sair</button>
 </div>
 
 <script>
-/* 🔐 CONFIG FIREBASE — CONFIRMA QUE É O TEU */
 const firebaseConfig = {
   apiKey: "AIzaSyA53gz5pwnzSFx4alP2Gb6L7N3qAvXmMdU",
   authDomain: "controle-financeiro-fafd9.firebaseapp.com",
-  projectId: "controle-financeiro-fafd9",
+  projectId: "controle-financeiro-fafd9"
 };
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let user;
-let chart;
+let user = null;
+let chart = null;
 
-/* LOGIN STATE */
+const loginDiv = document.getElementById("login");
+const appDiv = document.getElementById("app");
+const logoutDiv = document.getElementById("logout-area");
+
 auth.onAuthStateChanged(u => {
-  const loginDiv = document.getElementById("login");
-  const appDiv = document.getElementById("app");
-  const logoutDiv = document.getElementById("logout-area");
-
   if (u) {
     user = u;
     loginDiv.style.display = "none";
     appDiv.style.display = "block";
     logoutDiv.style.display = "block";
-carregarMeses();
-
+    carregarMeses();
     carregar();
   } else {
+    user = null;
     loginDiv.style.display = "block";
     appDiv.style.display = "none";
     logoutDiv.style.display = "none";
   }
 });
 
-/* LOGIN */
 function login() {
   auth.signInWithEmailAndPassword(email.value, password.value)
-    .catch(() => auth.createUserWithEmailAndPassword(email.value, password.value));
+    .catch(() =>
+      auth.createUserWithEmailAndPassword(email.value, password.value)
+    );
 }
 
-/* LOGOUT */
 function logout() {
   auth.signOut();
 }
 
-/* ADD GASTO */
 function addGasto() {
-  if (!desc.value || !val.value) return;
+  if (!desc.value || !val.value || !user) return;
 
   const data = new Date();
 
-db.collection("gastos").add({
-  uid: user.uid,
-  desc: desc.value,
-  cat: cat.value,
-  val: Number(val.value),
-  mes: data.getMonth(),
-  ano: data.getFullYear()
-});
+  db.collection("gastos").add({
+    uid: user.uid,
+    desc: desc.value,
+    cat: cat.value,
+    val: Number(val.value),
+    mes: data.getMonth(),
+    ano: data.getFullYear()
+  });
 
-desc.value = "";
-val.value = "";
+  desc.value = "";
+  val.value = "";
+}
 
-
-/* LOAD GASTOS */
 function carregar() {
   let query = db.collection("gastos").where("uid", "==", user.uid);
 
-const mesSelecionado = document.getElementById("mesSelecionado").value;
+  const mesSelecionado = document.getElementById("mesSelecionado").value;
 
-if (mesSelecionado) {
-  const partes = mesSelecionado.split("-");
-  const ano = Number(partes[0]);
-  const mes = Number(partes[1]);
+  if (mesSelecionado) {
+    const partes = mesSelecionado.split("-");
+    query = query
+      .where("ano", "==", Number(partes[0]))
+      .where("mes", "==", Number(partes[1]));
+  }
 
-  query = query
-    .where("ano", "==", ano)
-    .where("mes", "==", mes);
-}
-  .onSnapshot(snap => {
+  query.onSnapshot(snap => {
+    lista.innerHTML = "";
+    let total = 0;
+    let cats = {};
 
-      lista.innerHTML = "";
-      let total = 0;
-      let cats = {};
+    snap.forEach(doc => {
+      const g = doc.data();
+      total += g.val;
+      cats[g.cat] = (cats[g.cat] || 0) + g.val;
 
-      snap.forEach(doc => {
-        const g = doc.data();
-
-        total += g.val;
-        cats[g.cat] = (cats[g.cat] || 0) + g.val;
-
-        lista.innerHTML += `
-          <div class="gasto">
-            <span>${g.desc}</span>
-            <span>
-              <strong>€${g.val.toFixed(2)}</strong>
-              <button onclick="apagarGasto('${doc.id}')" style="margin-left:10px;">🗑</button>
-            </span>
-          </div>
-        `;
-      });
-
-      document.getElementById("total").innerText = total.toFixed(2);
-      grafico(cats);
+      lista.innerHTML += `
+        <div class="gasto">
+          <span>${g.desc}</span>
+          <span>
+            <strong>€${g.val.toFixed(2)}</strong>
+            <button onclick="apagarGasto('${doc.id}')">🗑</button>
+          </span>
+        </div>
+      `;
     });
-}
 
-/* CHART */
-function grafico(cats) {
-  if (chart) chart.destroy();
-
-  chart = new Chart(document.getElementById("grafico"), {
-    type: "pie",
-    data: {
-      labels: Object.keys(cats),
-      datasets: [{
-        data: Object.values(cats)
-      }]
-    }
+    totalSpan.innerText = total.toFixed(2);
+    desenharGrafico(cats);
   });
 }
+
 function apagarGasto(id) {
   if (confirm("Queres apagar este gasto?")) {
     db.collection("gastos").doc(id).delete();
   }
 }
+
+function desenharGrafico(cats) {
+  if (chart) chart.destroy();
+
+  chart = new Chart(grafico, {
+    type: "pie",
+    data: {
+      labels: Object.keys(cats),
+      datasets: [{ data: Object.values(cats) }]
+    }
+  });
+}
+
 function toggleDarkMode() {
   document.body.classList.toggle("dark");
-
   const lua = document.getElementById("dark-toggle");
   const escuro = document.body.classList.contains("dark");
-
   lua.innerText = escuro ? "☀️" : "🌙";
   localStorage.setItem("darkMode", escuro);
 }
+
 if (localStorage.getItem("darkMode") === "true") {
   document.body.classList.add("dark");
   document.getElementById("dark-toggle").innerText = "☀️";
 }
+
 function carregarMeses() {
   const select = document.getElementById("mesSelecionado");
-  if (!select) return;
-
   select.innerHTML = '<option value="">Mês atual</option>';
 
-  const agora = new Date();
-  const ano = agora.getFullYear();
-
+  const ano = new Date().getFullYear();
   const meses = [
     "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
     "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
@@ -329,10 +311,7 @@ function carregarMeses() {
     select.appendChild(option);
   });
 }
-
-
 </script>
 
 </body>
 </html>
-
