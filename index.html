@@ -10,9 +10,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<!-- Chart -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -84,7 +81,7 @@ button {
   color: #ff5252;
 }
 
-#logout {
+#logoutBtn {
   position: fixed;
   bottom: 20px;
   left: 50%;
@@ -94,12 +91,6 @@ button {
   padding: 10px 30px;
   border-radius: 30px;
   font-size: 14px;
-}
-
-.compare {
-  margin-top: 20px;
-  font-size: 15px;
-  text-align: center;
 }
 </style>
 </head>
@@ -149,15 +140,16 @@ button {
 
   <h3>Total: <span id="total">0.00</span></h3>
 
-  <div class="compare" id="comparacao"></div>
+  <div id="comparacao" style="text-align:center;margin-top:10px;"></div>
 
 </div>
 
 </div>
 
-<button id="logout" onclick="logout()" style="display:none">Sair</button>
+<button id="logoutBtn" onclick="logout()" style="display:none">Sair</button>
 
 <script>
+/* FIREBASE */
 const firebaseConfig = {
   apiKey: "AIzaSyA53gz5pwnzSFx4alP2Gb6L7N3qAvXmMdU",
   authDomain: "controle-financeiro-fafd9.firebaseapp.com",
@@ -168,38 +160,49 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let user;
+let user = null;
 
-// AUTH
+/* ELEMENTOS */
+const loginDiv = document.getElementById("login");
+const appDiv = document.getElementById("app");
+const logoutBtn = document.getElementById("logoutBtn");
+
+/* AUTH */
 auth.onAuthStateChanged(u => {
   if (u) {
     user = u;
-    login.style.display = "none";
-    app.style.display = "block";
-    logout.style.display = "block";
+    loginDiv.style.display = "none";
+    appDiv.style.display = "block";
+    logoutBtn.style.display = "block";
     carregarMeses();
     carregarCategorias();
     carregar();
+  } else {
+    user = null;
+    loginDiv.style.display = "block";
+    appDiv.style.display = "none";
+    logoutBtn.style.display = "none";
   }
 });
 
-// LOGIN / LOGOUT
+/* LOGIN / LOGOUT */
 function login() {
   auth.signInWithEmailAndPassword(email.value, password.value)
-    .catch(() => auth.createUserWithEmailAndPassword(email.value, password.value));
+    .catch(() =>
+      auth.createUserWithEmailAndPassword(email.value, password.value)
+    );
 }
 
 function logout() {
   auth.signOut();
 }
 
-// CATEGORIAS
+/* CATEGORIAS */
 function carregarCategorias() {
-  const cats = JSON.parse(localStorage.getItem("cats")) || [
-    "Alimentação","Transporte","Renda","Lazer","Outros"
-  ];
+  const base = ["Alimentação","Transporte","Renda","Lazer","Outros"];
+  const guardadas = JSON.parse(localStorage.getItem("cats")) || base;
   cat.innerHTML = "";
-  cats.forEach(c => cat.innerHTML += `<option>${c}</option>`);
+  guardadas.forEach(c => cat.innerHTML += `<option>${c}</option>`);
 }
 
 function addCategoria() {
@@ -211,7 +214,17 @@ function addCategoria() {
   carregarCategorias();
 }
 
-// GASTOS
+/* MESES */
+function carregarMeses() {
+  mesSelecionado.innerHTML = "";
+  const ano = new Date().getFullYear();
+  const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  meses.forEach((m,i)=> {
+    mesSelecionado.innerHTML += `<option value="${ano}-${i}">${m} ${ano}</option>`;
+  });
+}
+
+/* GASTOS */
 function addGasto() {
   if (!val.value || !user) return;
   const d = new Date();
@@ -230,29 +243,22 @@ function addGasto() {
   desc.value = "";
 }
 
-// MESES
-function carregarMeses() {
-  mesSelecionado.innerHTML = "";
-  const ano = new Date().getFullYear();
-  const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  meses.forEach((m,i)=> mesSelecionado.innerHTML += `<option value="${ano}-${i}">${m} ${ano}</option>`);
-}
-
-// CARREGAR + COMPARAR
+/* CARREGAR + COMPARAR */
 function carregar() {
-  const [ano,mes] = mesSelecionado.value.split("-").map(Number);
+  const [ano, mes] = mesSelecionado.value.split("-").map(Number);
 
   db.collection("gastos")
     .where("uid","==",user.uid)
     .where("ano","==",ano)
     .where("mes","==",mes)
-    .onSnapshot(snap=>{
-      lista.innerHTML="";
-      let total=0;
-      snap.forEach(d=>{
-        const g=d.data();
-        total+=g.val;
-        lista.innerHTML+=`
+    .onSnapshot(snap => {
+      lista.innerHTML = "";
+      let totalMes = 0;
+
+      snap.forEach(d => {
+        const g = d.data();
+        totalMes += g.val;
+        lista.innerHTML += `
           <div class="gasto">
             <span>${g.cat} • ${g.desc}</span>
             <span>${g.moeda}${g.val.toFixed(2)}
@@ -260,25 +266,32 @@ function carregar() {
             </span>
           </div>`;
       });
-      totalSpan.innerText = total.toFixed(2);
-      compararMeses(ano,mes,total);
+
+      total.innerText = totalMes.toFixed(2);
+      compararMeses(ano, mes, totalMes);
     });
 }
 
-function compararMeses(ano,mes,atual){
-  const prev = mes-1;
-  if(prev<0) return;
+function compararMeses(ano, mes, atual) {
+  const prev = mes - 1;
+  if (prev < 0) {
+    comparacao.innerText = "";
+    return;
+  }
+
   db.collection("gastos")
     .where("uid","==",user.uid)
     .where("ano","==",ano)
     .where("mes","==",prev)
-    .get().then(s=>{
-      let ant=0;
-      s.forEach(d=> ant+=d.data().val);
-      const diff = atual-ant;
+    .get()
+    .then(s => {
+      let ant = 0;
+      s.forEach(d => ant += d.data().val);
+      const diff = atual - ant;
       comparacao.innerText =
-        diff>=0 ? `↑ Gastaste +${diff.toFixed(2)} que o mês passado`
-                : `↓ Gastaste ${Math.abs(diff).toFixed(2)} a menos`;
+        diff >= 0
+          ? `↑ Gastaste +${diff.toFixed(2)} que o mês passado`
+          : `↓ Gastaste ${Math.abs(diff).toFixed(2)} a menos que o mês passado`;
     });
 }
 </script>
