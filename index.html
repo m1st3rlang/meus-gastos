@@ -14,27 +14,35 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+/* ===== TEMA ===== */
 :root{
+  /* MODO ESCURO (default) */
   --bg:#0f0f10;
   --card:#1a1a1c;
-  --text:#fff;
+  --text:#ffffff;
   --muted:#aaa;
-  --primary:#fff;
+  --primary:#ffffff;
+  --input:#111;
+  --border:#333;
 }
 
+/* MODO CLARO ROXO */
+.light{
+  --bg:#f3efff;        /* fundo roxo claro */
+  --card:#ffffff;     /* cards brancos */
+  --text:#2b1d4f;     /* roxo escuro */
+  --muted:#6b5ca5;    /* roxo suave */
+  --primary:#6c4cff;  /* roxo principal */
+  --input:#ffffff;
+  --border:#d8d0ff;
+}
+
+/* ===== BASE ===== */
 body{
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   background:var(--bg);
   color:var(--text);
-}
-
-.light{
-  --bg:#f5f6fa;
-  --card:#fff;
-  --text:#111;
-  --muted:#666;
-  --primary:#000;
 }
 
 .app{
@@ -47,7 +55,7 @@ body{
   background:var(--card);
   border-radius:20px;
   padding:20px;
-  box-shadow:0 15px 40px rgba(0,0,0,.4);
+  box-shadow:0 15px 40px rgba(0,0,0,.25);
 }
 
 h2{text-align:center;}
@@ -57,15 +65,10 @@ input,select{
   padding:14px;
   margin-top:12px;
   border-radius:14px;
-  background:#111;
-  border:1px solid #333;
+  background:var(--input);
+  border:1px solid var(--border);
   color:var(--text);
   font-size:15px;
-}
-
-.light input,.light select{
-  background:#fff;
-  border-color:#ddd;
 }
 
 button{
@@ -80,7 +83,11 @@ button{
 
 .btn-main{
   background:var(--primary);
-  color:var(--bg);
+  color:#fff;
+}
+
+.light .btn-main{
+  color:#fff;
 }
 
 .btn-light{
@@ -89,6 +96,7 @@ button{
   font-size:14px;
 }
 
+/* ===== LISTA ===== */
 .lista{margin-top:10px;}
 
 .gasto-card{
@@ -97,12 +105,12 @@ button{
   align-items:center;
   padding:14px;
   margin-top:10px;
-  background:#141416;
+  background:rgba(255,255,255,0.05);
   border-radius:14px;
 }
 
 .light .gasto-card{
-  background:#f0f1f4;
+  background:#f6f4ff;
 }
 
 .gasto-info{
@@ -110,19 +118,29 @@ button{
   flex-direction:column;
 }
 
-.gasto-cat{font-size:13px;color:var(--muted);}
-.gasto-desc{font-size:15px;}
+.gasto-cat{
+  font-size:13px;
+  color:var(--muted);
+}
+
+.gasto-desc{
+  font-size:15px;
+}
 
 .apagar{
   background:none;
   border:none;
-  color:#777;
+  color:var(--muted);
   cursor:pointer;
   opacity:.6;
 }
 
-.apagar:hover{opacity:1;color:#ff4d4d;}
+.apagar:hover{
+  opacity:1;
+  color:#ff4d4d;
+}
 
+/* ===== BOTÕES FIXOS ===== */
 #darkToggle{
   position:fixed;
   top:16px;
@@ -137,7 +155,7 @@ button{
   padding:10px 28px;
   border-radius:999px;
   background:var(--primary);
-  color:var(--bg);
+  color:#fff;
   font-size:14px;
   position:fixed;
   bottom:24px;
@@ -200,7 +218,7 @@ button{
 <button id="logoutBtn" style="display:none">Sair</button>
 
 <script>
-/* ---------- FIREBASE ---------- */
+/* FIREBASE */
 firebase.initializeApp({
   apiKey:"AIzaSyA53gz5pwnzSFx4alP2Gb6L7N3qAvXmMdU",
   authDomain:"controle-financeiro-fafd9.firebaseapp.com",
@@ -210,7 +228,7 @@ firebase.initializeApp({
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-/* ---------- ELEMENTOS ---------- */
+/* ELEMENTOS */
 const loginDiv = document.getElementById("login");
 const appDiv = document.getElementById("app");
 const logoutBtn = document.getElementById("logoutBtn");
@@ -223,20 +241,19 @@ const addCatBtn = document.getElementById("addCatBtn");
 let user = null;
 let chart = null;
 
-/* ---------- DARK MODE ---------- */
+/* ===== MODO CLARO / ESCURO ===== */
 function setTheme(isLight){
   document.body.classList.toggle("light", isLight);
   darkToggle.innerText = isLight ? "🌙" : "☀️";
   localStorage.setItem("light", isLight);
 }
-
 setTheme(localStorage.getItem("light") === "true");
 
 darkToggle.onclick = () => {
   setTheme(!document.body.classList.contains("light"));
 };
 
-/* ---------- AUTH ---------- */
+/* ===== AUTH ===== */
 auth.onAuthStateChanged(u=>{
   if(u){
     user = u;
@@ -261,7 +278,7 @@ loginBtn.onclick = () => {
 
 logoutBtn.onclick = () => auth.signOut();
 
-/* ---------- CATEGORIAS ---------- */
+/* ===== CATEGORIAS ===== */
 function carregarCategorias(){
   const base=["Alimentação","Transporte","Renda","Lazer","Outros"];
   const cats=JSON.parse(localStorage.getItem("cats"))||base;
@@ -278,7 +295,7 @@ addCatBtn.onclick = () => {
   carregarCategorias();
 };
 
-/* ---------- MESES ---------- */
+/* ===== MESES ===== */
 function carregarMeses(){
   mesSelecionado.innerHTML="";
   const ano=new Date().getFullYear();
@@ -287,10 +304,9 @@ function carregarMeses(){
     mesSelecionado.innerHTML+=`<option value="${ano}-${i}">${m} ${ano}</option>`;
   });
 }
-
 mesSelecionado.onchange = carregar;
 
-/* ---------- GASTOS ---------- */
+/* ===== GASTOS ===== */
 addBtn.onclick = () => {
   if(!val.value || !user) return;
   const d=new Date();
@@ -341,28 +357,24 @@ function carregar(){
     });
 }
 
-/* ---------- GRÁFICO ---------- */
+/* ===== GRÁFICO ===== */
 function desenharGrafico(cats){
   if(chart) chart.destroy();
   chart=new Chart(grafico,{
     type:"doughnut",
-    data:{
-      labels:Object.keys(cats),
-      datasets:[{data:Object.values(cats)}]
-    },
-    options:{plugins:{legend:{labels:{color:"#aaa"}}}}
+    data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats)}]},
+    options:{plugins:{legend:{labels:{color:document.body.classList.contains("light")?"#6b5ca5":"#aaa"}}}}
   });
 }
 
-/* ---------- COMPARAÇÃO ---------- */
+/* ===== COMPARAÇÃO ===== */
 function compararMeses(a,m,atual){
   if(m===0){comparacao.innerText="";return;}
   db.collection("gastos")
     .where("uid","==",user.uid)
     .where("ano","==",a)
     .where("mes","==",m-1)
-    .get()
-    .then(s=>{
+    .get().then(s=>{
       let ant=0;
       s.forEach(d=>ant+=d.data().val);
       const diff=atual-ant;
