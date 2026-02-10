@@ -56,7 +56,6 @@ input,select{
   color:var(--text);
 }
 
-/* 🔴 NÃO existe mais width:100% aqui */
 button{
   padding:14px;
   margin-top:14px;
@@ -67,12 +66,8 @@ button{
   cursor:pointer;
 }
 
-/* Botões grandes */
-.btn-main{
-  width:100%;
-}
+.btn-main{width:100%;}
 
-/* Gastos */
 .gasto{
   display:flex;
   justify-content:space-between;
@@ -86,7 +81,6 @@ button{
   border-radius:6px;
 }
 
-/* Categorias */
 .cat-row{
   display:flex;
   gap:8px;
@@ -119,7 +113,6 @@ canvas{margin-top:20px;}
   cursor:pointer;
 }
 
-/* ✅ BOTÃO SAIR FINAL */
 #logoutBtn{
   position:fixed;
   bottom:22px;
@@ -157,6 +150,13 @@ canvas{margin-top:20px;}
 
 <input id="salario" type="number" placeholder="Salário mensal">
 
+<!-- ✅ MOEDA -->
+<select id="moeda">
+  <option value="€">Euro (€)</option>
+  <option value="$">Dólar ($)</option>
+  <option value="R$">Real (R$)</option>
+</select>
+
 <div class="cat-row">
   <select id="cat"></select>
   <button class="cat-add">+</button>
@@ -164,7 +164,7 @@ canvas{margin-top:20px;}
 </div>
 
 <input id="desc" placeholder="Descrição">
-<input id="val" type="number" placeholder="Valor (€)">
+<input id="val" type="number" placeholder="Valor">
 <button class="btn-main" id="addBtn">Adicionar gasto</button>
 
 <div class="compare" id="comparacao"></div>
@@ -172,7 +172,7 @@ canvas{margin-top:20px;}
 <h3>Gastos do mês</h3>
 <div id="lista"></div>
 
-<h3>Total: € <span id="total">0.00</span></h3>
+<h3>Total: <span id="total">0.00</span></h3>
 
 <canvas id="grafico"></canvas>
 
@@ -194,6 +194,16 @@ const db=firebase.firestore();
 let chart=null;
 
 darkToggle.onclick=()=>document.body.classList.toggle("light");
+
+/* MOEDA */
+const moedaSelect = document.getElementById("moeda");
+let moedaAtual = localStorage.getItem("moeda") || "€";
+moedaSelect.value = moedaAtual;
+moedaSelect.onchange = () => {
+  moedaAtual = moedaSelect.value;
+  localStorage.setItem("moeda", moedaAtual);
+  carregar();
+};
 
 /* MESES */
 function carregarMesesFixos(){
@@ -302,17 +312,18 @@ function carregar(){
           <div class="gasto">
             <span>${g.desc}</span>
             <span>
-              €${g.val.toFixed(2)}
+              ${moedaAtual} ${g.val.toFixed(2)}
               <button onclick="apagar('${doc.id}')">🗑</button>
             </span>
           </div>`;
       });
-      total.innerText=total.toFixed(2);
+      totalEl.innerText = `${moedaAtual} ${total.toFixed(2)}`;
       desenharGrafico(cats);
       compararMesAnterior(ano,mes,total);
     });
 }
 
+const totalEl = document.getElementById("total");
 mesSelecionado.onchange=carregar;
 
 function apagar(id){
@@ -344,7 +355,7 @@ async function compararMesAnterior(ano,mes,totalAtual){
   snap.forEach(d=>totalAnt+=d.data().val);
   const diff=totalAtual-totalAnt;
   comparacao.innerText=
-    `Mês anterior: € ${totalAnt.toFixed(2)} | Diferença: ${diff>=0?"↑":"↓"} € ${Math.abs(diff).toFixed(2)}`;
+    `Mês anterior: ${moedaAtual} ${totalAnt.toFixed(2)} | Diferença: ${diff>=0?"↑":"↓"} ${moedaAtual} ${Math.abs(diff).toFixed(2)}`;
 }
 </script>
 
