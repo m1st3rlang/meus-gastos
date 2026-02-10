@@ -48,10 +48,26 @@ button {
   cursor: pointer;
 }
 
+/* LINHA DE GASTO */
 .gasto {
   display: flex;
   justify-content: space-between;
-  margin-top: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+/* BOTÃO APAGAR (DISCRETO) */
+.btn-apagar {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #999;
+  padding: 4px 6px;
+}
+
+.btn-apagar:hover {
+  color: #e74c3c;
 }
 
 #app {
@@ -252,13 +268,13 @@ function carregar() {
           <span>${g.desc}</span>
           <span>
             <strong>€${g.val.toFixed(2)}</strong>
-            <button onclick="apagarGasto('${doc.id}')">🗑</button>
+            <button class="btn-apagar" onclick="apagarGasto('${doc.id}')">🗑</button>
           </span>
         </div>
       `;
     });
 
-    totalSpan.innerText = total.toFixed(2);
+    total.innerText = total.toFixed(2);
     desenharGrafico(cats);
   });
 }
