@@ -76,7 +76,7 @@ button{
   color:var(--primary-text);
 }
 
-/* ===== DASHBOARD (NOVO) ===== */
+/* ===== DASHBOARD ===== */
 .dashboard{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -125,21 +125,6 @@ button{
   cursor:pointer;
 }
 
-/* ===== CATEGORIAS ===== */
-.cat-row{position:relative;}
-.delete-cat{
-  position:absolute;
-  right:12px;
-  top:50%;
-  transform:translateY(-50%);
-  background:none;
-  border:none;
-  font-size:16px;
-  color:#ff6b6b;
-  cursor:pointer;
-  display:none;
-}
-
 /* ===== FIXOS ===== */
 #darkToggle{
   position:fixed;
@@ -183,8 +168,22 @@ button{
 <!-- APP -->
 <div id="app" style="display:none">
 
-<!-- 🔹 BLOCO 1 -->
-<input id="salario" type="number" placeholder="Salário mensal">
+<!-- SALÁRIO -->
+<div style="position:relative">
+  <input id="salario" type="number" placeholder="Salário mensal">
+  <button id="clearSalario"
+    style="
+      position:absolute;
+      right:10px;
+      top:50%;
+      transform:translateY(-50%);
+      background:none;
+      border:none;
+      font-size:16px;
+      cursor:pointer;
+      color:#ff6b6b;
+    ">🗑</button>
+</div>
 
 <div class="dashboard">
   <div>💸 Gastos<br><strong id="gastosResumo">0.00</strong></div>
@@ -192,34 +191,12 @@ button{
 </div>
 
 <div id="alertaBox"></div>
-<!-- 🔹 FIM BLOCO 1 -->
-
-<select id="mesSelecionado"></select>
-
-<select id="moeda">
-  <option value="€">Euro (€)</option>
-  <option value="R$">Real (R$)</option>
-  <option value="$">Dólar ($)</option>
-  <option value="£">Libra (£)</option>
-</select>
-
-<div class="cat-row">
-  <select id="cat"></select>
-  <button id="deleteCatBtn" class="delete-cat">🗑</button>
-</div>
 
 <input id="desc" placeholder="Descrição">
-<input id="val" type="number" placeholder="Valor">
-
+<input id="val" type="number" placeholder="Valor (€)">
 <button class="btn-main" id="addBtn">Adicionar gasto</button>
 
-<h3 style="margin-top:24px">Gastos do mês</h3>
-<div class="lista" id="lista"></div>
-
-<h3>Total: <span id="total">0.00</span></h3>
-<div id="comparacao" style="text-align:center;color:var(--muted)"></div>
-
-<canvas id="grafico" style="margin-top:20px"></canvas>
+<h3>Total do mês: € <span id="total">0.00</span></h3>
 
 </div>
 </div>
@@ -228,7 +205,6 @@ button{
 <button id="logoutBtn" style="display:none">Sair</button>
 
 <script>
-/* ===== FIREBASE ===== */
 firebase.initializeApp({
   apiKey:"AIzaSyA53gz5pwnzSFx4alP2Gb6L7N3qAvXmMdU",
   authDomain:"controle-financeiro-fafd9.firebaseapp.com",
@@ -236,33 +212,26 @@ firebase.initializeApp({
 });
 const auth=firebase.auth(), db=firebase.firestore();
 
-/* ===== ELEMENTOS ===== */
-const loginDiv=login, appDiv=app;
-let user=null, chart=null;
-
-/* ===== TEMA ===== */
-function setTheme(l){
-  document.body.classList.toggle("light",l);
-  darkToggle.innerText=l?"🌙":"☀️";
-  localStorage.setItem("light",l);
+/* TEMA */
+function setTheme(light){
+  document.body.classList.toggle("light",light);
+  darkToggle.innerText=light?"🌙":"☀️";
+  localStorage.setItem("light",light);
 }
 setTheme(localStorage.getItem("light")==="true");
 darkToggle.onclick=()=>setTheme(!document.body.classList.contains("light"));
 
-/* ===== AUTH ===== */
+/* AUTH */
 auth.onAuthStateChanged(u=>{
   if(u){
-    user=u;
-    loginDiv.style.display="none";
-    appDiv.style.display="block";
+    login.style.display="none";
+    app.style.display="block";
     logoutBtn.style.display="block";
     salario.value=localStorage.getItem("salario")||"";
-    carregarMeses();
-    carregarCategorias();
     carregar();
   }else{
-    loginDiv.style.display="block";
-    appDiv.style.display="none";
+    login.style.display="block";
+    app.style.display="none";
     logoutBtn.style.display="none";
   }
 });
@@ -270,95 +239,39 @@ loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value)
 .catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
 logoutBtn.onclick=()=>auth.signOut();
 
-/* ===== SALÁRIO ===== */
+/* SALÁRIO */
 salario.onchange=()=>localStorage.setItem("salario",salario.value);
 
-/* ===== CATEGORIAS ===== */
-const baseCats=["Alimentação","Transporte","Renda","Lazer","Outros"];
-function getCats(){return JSON.parse(localStorage.getItem("cats"))||baseCats;}
-function saveCats(c){localStorage.setItem("cats",JSON.stringify(c));}
-
-function carregarCategorias(){
-  const c=getCats();
-  cat.innerHTML="";
-  c.forEach(x=>cat.innerHTML+=`<option>${x}</option>`);
-  cat.innerHTML+=`<option value="__add">➕ Adicionar categoria</option>`;
-  updateDeleteCat();
-}
-cat.onchange=()=>{
-  if(cat.value==="__add"){
-    const nome=prompt("Nome da nova categoria:");
-    if(nome){
-      const c=getCats();c.push(nome);saveCats(c);
-      carregarCategorias();cat.value=nome;
-    }else cat.selectedIndex=0;
-  }
-  updateDeleteCat();
-};
-function updateDeleteCat(){
-  deleteCatBtn.style.display=
-    baseCats.includes(cat.value)||cat.value==="__add"?"none":"block";
-}
-deleteCatBtn.onclick=()=>{
-  if(confirm(`Queres apagar a categoria "${cat.value}"?`)){
-    saveCats(getCats().filter(c=>c!==cat.value));
-    carregarCategorias();
+clearSalario.onclick=()=>{
+  if(confirm("Queres apagar o salário mensal?")){
+    localStorage.removeItem("salario");
+    salario.value="";
+    carregar();
   }
 };
 
-/* ===== MESES ===== */
-function carregarMeses(){
-  mesSelecionado.innerHTML="";
-  const a=new Date().getFullYear();
-  ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
-  .forEach((m,i)=>mesSelecionado.innerHTML+=`<option value="${a}-${i}">${m} ${a}</option>`);
-}
-mesSelecionado.onchange=carregar;
-
-/* ===== APAGAR GASTO ===== */
-function apagarGasto(id){
-  if(confirm("Tens a certeza que queres apagar este gasto?")){
-    db.collection("gastos").doc(id).delete();
-  }
-}
-
-/* ===== GASTOS ===== */
+/* GASTOS */
 addBtn.onclick=()=>{
-  if(!val.value||!user)return;
+  if(!val.value)return;
   const d=new Date();
   db.collection("gastos").add({
-    uid:user.uid,cat:cat.value,desc:desc.value,
-    val:+val.value,moeda:moeda.value,
-    mes:d.getMonth(),ano:d.getFullYear()
+    uid:auth.currentUser.uid,
+    val:+val.value,
+    mes:d.getMonth(),
+    ano:d.getFullYear()
   });
   val.value="";desc.value="";
 };
 
 function carregar(){
-  const [ano,mes]=mesSelecionado.value.split("-").map(Number);
+  const d=new Date();
   db.collection("gastos")
-  .where("uid","==",user.uid)
-  .where("ano","==",ano)
-  .where("mes","==",mes)
+  .where("uid","==",auth.currentUser.uid)
+  .where("ano","==",d.getFullYear())
+  .where("mes","==",d.getMonth())
   .onSnapshot(s=>{
-    lista.innerHTML="";
-    let totalMes=0,cats={};
-    s.forEach(d=>{
-      const g=d.data();
-      totalMes+=g.val;
-      cats[g.cat]=(cats[g.cat]||0)+g.val;
-      lista.innerHTML+=`
-        <div class="gasto-card">
-          <div class="gasto-info">
-            <span class="gasto-cat">${g.cat}</span>
-            <span>${g.desc}</span>
-          </div>
-          <div>
-            <strong>${g.moeda}${g.val.toFixed(2)}</strong>
-            <button class="apagar" onclick="apagarGasto('${d.id}')">🗑</button>
-          </div>
-        </div>`;
-    });
+    let totalMes=0;
+    s.forEach(doc=>totalMes+=doc.data().val);
     total.innerText=totalMes.toFixed(2);
     gastosResumo.innerText=totalMes.toFixed(2);
 
@@ -368,40 +281,14 @@ function carregar(){
 
     alertaBox.innerHTML="";
     if(!sal) return;
-    const p=totalMes/sal;
-    if(p>1) alertaBox.innerHTML='<div class="alerta danger">🔴 Ultrapassaste o teu salário</div>';
-    else if(p>0.8) alertaBox.innerHTML='<div class="alerta warn">⚠️ Já gastaste mais de 80%</div>';
-    else alertaBox.innerHTML='<div class="alerta ok">👏 Estás a controlar bem os gastos</div>';
-
-    desenharGrafico(cats);
-    compararMeses(ano,mes,totalMes);
-  });
-}
-
-/* ===== GRÁFICO ===== */
-function desenharGrafico(cats){
-  if(chart)chart.destroy();
-  chart=new Chart(grafico,{
-    type:"doughnut",
-    data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats)}]},
-    options:{plugins:{legend:{labels:{color:document.body.classList.contains("light")?"#6b5ca5":"#aaa"}}}}
-  });
-}
-
-/* ===== COMPARAÇÃO ===== */
-function compararMeses(a,m,atual){
-  if(m===0){comparacao.innerText="";return;}
-  db.collection("gastos")
-  .where("uid","==",user.uid)
-  .where("ano","==",a)
-  .where("mes","==",m-1)
-  .get().then(s=>{
-    let ant=0;s.forEach(d=>ant+=d.data().val);
-    const diff=atual-ant;
-    comparacao.innerText=
-      diff>=0
-        ?`↑ Gastaste +${diff.toFixed(2)} que o mês passado`
-        :`↓ Gastaste ${Math.abs(diff).toFixed(2)} a menos que o mês passado`;
+    const perc=totalMes/sal;
+    if(perc>1){
+      alertaBox.innerHTML='<div class="alerta danger">🔴 Ultrapassaste o teu salário</div>';
+    }else if(perc>0.8){
+      alertaBox.innerHTML='<div class="alerta warn">⚠️ Já gastaste mais de 80%</div>';
+    }else{
+      alertaBox.innerHTML='<div class="alerta ok">👏 Estás a controlar bem os gastos</div>';
+    }
   });
 }
 </script>
