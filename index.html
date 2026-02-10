@@ -25,7 +25,6 @@
   --input:#111;
   --border:#333;
 }
-
 .light{
   --bg:#f3efff;
   --card:#ffffff;
@@ -44,20 +43,13 @@ body{
   background:var(--bg);
   color:var(--text);
 }
-
-.app{
-  max-width:420px;
-  margin:auto;
-  padding:20px;
-}
-
+.app{max-width:420px;margin:auto;padding:20px;}
 .card{
   background:var(--card);
   border-radius:20px;
   padding:20px;
   box-shadow:0 15px 40px rgba(0,0,0,.25);
 }
-
 h2{text-align:center;}
 
 input,select{
@@ -70,7 +62,6 @@ input,select{
   color:var(--text);
   font-size:15px;
 }
-
 button{
   width:100%;
   padding:14px;
@@ -80,21 +71,41 @@ button{
   font-size:15px;
   cursor:pointer;
 }
-
 .btn-main{
   background:var(--primary);
   color:var(--primary-text);
 }
 
-.btn-light{
-  background:none;
-  color:var(--muted);
+/* ===== DASHBOARD (NOVO) ===== */
+.dashboard{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:10px;
+}
+.dashboard div{
+  background:rgba(255,255,255,.06);
+  padding:14px;
+  border-radius:14px;
+  text-align:center;
   font-size:14px;
 }
+.light .dashboard div{background:#f6f4ff;}
+.dashboard strong{font-size:16px;}
+
+.alerta{
+  margin-top:12px;
+  padding:12px;
+  border-radius:12px;
+  font-size:14px;
+  text-align:center;
+}
+.alerta.ok{background:#1f7a3f;}
+.alerta.warn{background:#8a6d1d;}
+.alerta.danger{background:#7a1f1f;}
 
 /* ===== LISTA ===== */
 .lista{margin-top:10px;}
-
 .gasto-card{
   display:flex;
   justify-content:space-between;
@@ -104,21 +115,9 @@ button{
   background:rgba(255,255,255,0.05);
   border-radius:14px;
 }
-
-.light .gasto-card{
-  background:#f6f4ff;
-}
-
-.gasto-info{
-  display:flex;
-  flex-direction:column;
-}
-
-.gasto-cat{
-  font-size:13px;
-  color:var(--muted);
-}
-
+.light .gasto-card{background:#f6f4ff;}
+.gasto-info{display:flex;flex-direction:column;}
+.gasto-cat{font-size:13px;color:var(--muted);}
 .apagar{
   background:none;
   border:none;
@@ -127,9 +126,7 @@ button{
 }
 
 /* ===== CATEGORIAS ===== */
-.cat-row{
-  position:relative;
-}
+.cat-row{position:relative;}
 .delete-cat{
   position:absolute;
   right:12px;
@@ -143,7 +140,7 @@ button{
   display:none;
 }
 
-/* ===== BOTÕES FIXOS ===== */
+/* ===== FIXOS ===== */
 #darkToggle{
   position:fixed;
   top:16px;
@@ -151,7 +148,6 @@ button{
   font-size:22px;
   cursor:pointer;
 }
-
 #logoutBtn{
   width:auto;
   min-width:120px;
@@ -173,49 +169,60 @@ button{
 <div id="darkToggle">🌙</div>
 
 <div class="app">
-  <div class="card">
+<div class="card">
 
-    <h2>💰 Gestão de Gastos</h2>
+<h2>💰 Gestão de Gastos</h2>
 
-    <!-- LOGIN -->
-    <div id="login">
-      <input id="email" placeholder="Email">
-      <input id="password" type="password" placeholder="Palavra-passe">
-      <button class="btn-main" id="loginBtn">Entrar / Criar conta</button>
-    </div>
+<!-- LOGIN -->
+<div id="login">
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Palavra-passe">
+  <button class="btn-main" id="loginBtn">Entrar / Criar conta</button>
+</div>
 
-    <!-- APP -->
-    <div id="app" style="display:none">
+<!-- APP -->
+<div id="app" style="display:none">
 
-      <select id="mesSelecionado"></select>
+<!-- 🔹 BLOCO 1 -->
+<input id="salario" type="number" placeholder="Salário mensal">
 
-      <select id="moeda">
-        <option value="€">Euro (€)</option>
-        <option value="R$">Real (R$)</option>
-        <option value="$">Dólar ($)</option>
-        <option value="£">Libra (£)</option>
-      </select>
+<div class="dashboard">
+  <div>💸 Gastos<br><strong id="gastosResumo">0.00</strong></div>
+  <div>🟢 Saldo<br><strong id="saldoResumo">0.00</strong></div>
+</div>
 
-      <div class="cat-row">
-        <select id="cat"></select>
-        <button id="deleteCatBtn" class="delete-cat">🗑</button>
-      </div>
+<div id="alertaBox"></div>
+<!-- 🔹 FIM BLOCO 1 -->
 
-      <input id="desc" placeholder="Descrição">
-      <input id="val" type="number" placeholder="Valor">
+<select id="mesSelecionado"></select>
 
-      <button class="btn-main" id="addBtn">Adicionar gasto</button>
+<select id="moeda">
+  <option value="€">Euro (€)</option>
+  <option value="R$">Real (R$)</option>
+  <option value="$">Dólar ($)</option>
+  <option value="£">Libra (£)</option>
+</select>
 
-      <h3 style="margin-top:24px">Gastos do mês</h3>
-      <div class="lista" id="lista"></div>
+<div class="cat-row">
+  <select id="cat"></select>
+  <button id="deleteCatBtn" class="delete-cat">🗑</button>
+</div>
 
-      <h3>Total: <span id="total">0.00</span></h3>
-      <div id="comparacao" style="text-align:center;color:var(--muted)"></div>
+<input id="desc" placeholder="Descrição">
+<input id="val" type="number" placeholder="Valor">
 
-      <canvas id="grafico" style="margin-top:20px"></canvas>
+<button class="btn-main" id="addBtn">Adicionar gasto</button>
 
-    </div>
-  </div>
+<h3 style="margin-top:24px">Gastos do mês</h3>
+<div class="lista" id="lista"></div>
+
+<h3>Total: <span id="total">0.00</span></h3>
+<div id="comparacao" style="text-align:center;color:var(--muted)"></div>
+
+<canvas id="grafico" style="margin-top:20px"></canvas>
+
+</div>
+</div>
 </div>
 
 <button id="logoutBtn" style="display:none">Sair</button>
@@ -227,29 +234,20 @@ firebase.initializeApp({
   authDomain:"controle-financeiro-fafd9.firebaseapp.com",
   projectId:"controle-financeiro-fafd9"
 });
-
-const auth = firebase.auth();
-const db = firebase.firestore();
+const auth=firebase.auth(), db=firebase.firestore();
 
 /* ===== ELEMENTOS ===== */
-const loginDiv = document.getElementById("login");
-const appDiv = document.getElementById("app");
-const logoutBtn = document.getElementById("logoutBtn");
-const darkToggle = document.getElementById("darkToggle");
-const deleteCatBtn = document.getElementById("deleteCatBtn");
-
-let user = null;
-let chart = null;
+const loginDiv=login, appDiv=app;
+let user=null, chart=null;
 
 /* ===== TEMA ===== */
-function setTheme(isLight){
-  document.body.classList.toggle("light", isLight);
-  darkToggle.innerText = isLight ? "🌙" : "☀️";
-  localStorage.setItem("light", isLight);
+function setTheme(l){
+  document.body.classList.toggle("light",l);
+  darkToggle.innerText=l?"🌙":"☀️";
+  localStorage.setItem("light",l);
 }
-setTheme(localStorage.getItem("light") === "true");
-darkToggle.onclick = () =>
-  setTheme(!document.body.classList.contains("light"));
+setTheme(localStorage.getItem("light")==="true");
+darkToggle.onclick=()=>setTheme(!document.body.classList.contains("light"));
 
 /* ===== AUTH ===== */
 auth.onAuthStateChanged(u=>{
@@ -258,6 +256,7 @@ auth.onAuthStateChanged(u=>{
     loginDiv.style.display="none";
     appDiv.style.display="block";
     logoutBtn.style.display="block";
+    salario.value=localStorage.getItem("salario")||"";
     carregarMeses();
     carregarCategorias();
     carregar();
@@ -267,22 +266,17 @@ auth.onAuthStateChanged(u=>{
     logoutBtn.style.display="none";
   }
 });
+loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value)
+.catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
+logoutBtn.onclick=()=>auth.signOut();
 
-loginBtn.onclick = () =>
-  auth.signInWithEmailAndPassword(email.value,password.value)
-  .catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
-
-logoutBtn.onclick = () => auth.signOut();
+/* ===== SALÁRIO ===== */
+salario.onchange=()=>localStorage.setItem("salario",salario.value);
 
 /* ===== CATEGORIAS ===== */
 const baseCats=["Alimentação","Transporte","Renda","Lazer","Outros"];
-
-function getCats(){
-  return JSON.parse(localStorage.getItem("cats")) || baseCats;
-}
-function saveCats(c){
-  localStorage.setItem("cats",JSON.stringify(c));
-}
+function getCats(){return JSON.parse(localStorage.getItem("cats"))||baseCats;}
+function saveCats(c){localStorage.setItem("cats",JSON.stringify(c));}
 
 function carregarCategorias(){
   const c=getCats();
@@ -291,24 +285,20 @@ function carregarCategorias(){
   cat.innerHTML+=`<option value="__add">➕ Adicionar categoria</option>`;
   updateDeleteCat();
 }
-
 cat.onchange=()=>{
   if(cat.value==="__add"){
     const nome=prompt("Nome da nova categoria:");
     if(nome){
-      const c=getCats(); c.push(nome); saveCats(c);
-      carregarCategorias(); cat.value=nome;
+      const c=getCats();c.push(nome);saveCats(c);
+      carregarCategorias();cat.value=nome;
     }else cat.selectedIndex=0;
   }
   updateDeleteCat();
 };
-
 function updateDeleteCat(){
-  deleteCatBtn.style.display =
-    baseCats.includes(cat.value)||cat.value==="__add"
-    ? "none" : "block";
+  deleteCatBtn.style.display=
+    baseCats.includes(cat.value)||cat.value==="__add"?"none":"block";
 }
-
 deleteCatBtn.onclick=()=>{
   if(confirm(`Queres apagar a categoria "${cat.value}"?`)){
     saveCats(getCats().filter(c=>c!==cat.value));
@@ -319,13 +309,11 @@ deleteCatBtn.onclick=()=>{
 /* ===== MESES ===== */
 function carregarMeses(){
   mesSelecionado.innerHTML="";
-  const ano=new Date().getFullYear();
-  const meses=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  meses.forEach((m,i)=>
-    mesSelecionado.innerHTML+=`<option value="${ano}-${i}">${m} ${ano}</option>`
-  );
+  const a=new Date().getFullYear();
+  ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
+  .forEach((m,i)=>mesSelecionado.innerHTML+=`<option value="${a}-${i}">${m} ${a}</option>`);
 }
-mesSelecionado.onchange = carregar;
+mesSelecionado.onchange=carregar;
 
 /* ===== APAGAR GASTO ===== */
 function apagarGasto(id){
@@ -339,71 +327,64 @@ addBtn.onclick=()=>{
   if(!val.value||!user)return;
   const d=new Date();
   db.collection("gastos").add({
-    uid:user.uid,
-    cat:cat.value,
-    desc:desc.value,
-    val:+val.value,
-    moeda:moeda.value,
-    mes:d.getMonth(),
-    ano:d.getFullYear()
+    uid:user.uid,cat:cat.value,desc:desc.value,
+    val:+val.value,moeda:moeda.value,
+    mes:d.getMonth(),ano:d.getFullYear()
   });
-  val.value=""; desc.value="";
+  val.value="";desc.value="";
 };
 
 function carregar(){
   const [ano,mes]=mesSelecionado.value.split("-").map(Number);
   db.collection("gastos")
-    .where("uid","==",user.uid)
-    .where("ano","==",ano)
-    .where("mes","==",mes)
-    .onSnapshot(s=>{
-      lista.innerHTML="";
-      let totalMes=0;
-      let cats={};
-
-      s.forEach(d=>{
-        const g=d.data();
-        totalMes+=g.val;
-        cats[g.cat]=(cats[g.cat]||0)+g.val;
-
-        lista.innerHTML+=`
-          <div class="gasto-card">
-            <div class="gasto-info">
-              <span class="gasto-cat">${g.cat}</span>
-              <span>${g.desc}</span>
-            </div>
-            <div>
-              <strong>${g.moeda}${g.val.toFixed(2)}</strong>
-              <button class="apagar" onclick="apagarGasto('${d.id}')">🗑</button>
-            </div>
-          </div>`;
-      });
-
-      total.innerText=totalMes.toFixed(2);
-      desenharGrafico(cats);
-      compararMeses(ano,mes,totalMes);
+  .where("uid","==",user.uid)
+  .where("ano","==",ano)
+  .where("mes","==",mes)
+  .onSnapshot(s=>{
+    lista.innerHTML="";
+    let totalMes=0,cats={};
+    s.forEach(d=>{
+      const g=d.data();
+      totalMes+=g.val;
+      cats[g.cat]=(cats[g.cat]||0)+g.val;
+      lista.innerHTML+=`
+        <div class="gasto-card">
+          <div class="gasto-info">
+            <span class="gasto-cat">${g.cat}</span>
+            <span>${g.desc}</span>
+          </div>
+          <div>
+            <strong>${g.moeda}${g.val.toFixed(2)}</strong>
+            <button class="apagar" onclick="apagarGasto('${d.id}')">🗑</button>
+          </div>
+        </div>`;
     });
+    total.innerText=totalMes.toFixed(2);
+    gastosResumo.innerText=totalMes.toFixed(2);
+
+    const sal=+salario.value||0;
+    const saldo=sal-totalMes;
+    saldoResumo.innerText=saldo.toFixed(2);
+
+    alertaBox.innerHTML="";
+    if(!sal) return;
+    const p=totalMes/sal;
+    if(p>1) alertaBox.innerHTML='<div class="alerta danger">🔴 Ultrapassaste o teu salário</div>';
+    else if(p>0.8) alertaBox.innerHTML='<div class="alerta warn">⚠️ Já gastaste mais de 80%</div>';
+    else alertaBox.innerHTML='<div class="alerta ok">👏 Estás a controlar bem os gastos</div>';
+
+    desenharGrafico(cats);
+    compararMeses(ano,mes,totalMes);
+  });
 }
 
 /* ===== GRÁFICO ===== */
 function desenharGrafico(cats){
-  if(chart) chart.destroy();
+  if(chart)chart.destroy();
   chart=new Chart(grafico,{
     type:"doughnut",
-    data:{
-      labels:Object.keys(cats),
-      datasets:[{data:Object.values(cats)}]
-    },
-    options:{
-      plugins:{
-        legend:{
-          labels:{
-            color:document.body.classList.contains("light")
-              ? "#6b5ca5" : "#aaa"
-          }
-        }
-      }
-    }
+    data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats)}]},
+    options:{plugins:{legend:{labels:{color:document.body.classList.contains("light")?"#6b5ca5":"#aaa"}}}}
   });
 }
 
@@ -411,19 +392,17 @@ function desenharGrafico(cats){
 function compararMeses(a,m,atual){
   if(m===0){comparacao.innerText="";return;}
   db.collection("gastos")
-    .where("uid","==",user.uid)
-    .where("ano","==",a)
-    .where("mes","==",m-1)
-    .get()
-    .then(s=>{
-      let ant=0;
-      s.forEach(d=>ant+=d.data().val);
-      const diff=atual-ant;
-      comparacao.innerText =
-        diff>=0
-          ? `↑ Gastaste +${diff.toFixed(2)} que o mês passado`
-          : `↓ Gastaste ${Math.abs(diff).toFixed(2)} a menos que o mês passado`;
-    });
+  .where("uid","==",user.uid)
+  .where("ano","==",a)
+  .where("mes","==",m-1)
+  .get().then(s=>{
+    let ant=0;s.forEach(d=>ant+=d.data().val);
+    const diff=atual-ant;
+    comparacao.innerText=
+      diff>=0
+        ?`↑ Gastaste +${diff.toFixed(2)} que o mês passado`
+        :`↓ Gastaste ${Math.abs(diff).toFixed(2)} a menos que o mês passado`;
+  });
 }
 </script>
 
