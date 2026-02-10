@@ -14,6 +14,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+/* BASE */
 body {
   font-family: Arial, sans-serif;
   background: #f4f6f8;
@@ -33,14 +34,20 @@ h2 {
   text-align: center;
 }
 
-input, select, button {
+/* CAMPOS */
+input, select {
   width: 100%;
   padding: 14px;
   margin-top: 12px;
   font-size: 17px;
 }
 
-button {
+/* BOTÕES GRANDES */
+.btn-principal {
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  font-size: 17px;
   background: black;
   color: white;
   border: none;
@@ -48,7 +55,7 @@ button {
   cursor: pointer;
 }
 
-/* LINHA DE GASTO */
+/* LISTA */
 .gasto {
   display: flex;
   justify-content: space-between;
@@ -56,39 +63,46 @@ button {
   margin-top: 10px;
 }
 
-/* BOTÃO APAGAR (DISCRETO) */
+/* BOTÃO APAGAR */
 .btn-apagar {
   background: transparent;
   border: none;
   font-size: 16px;
   cursor: pointer;
   color: #999;
-  padding: 4px 6px;
+  padding: 4px;
 }
 
 .btn-apagar:hover {
   color: #e74c3c;
 }
 
+/* APP */
 #app {
   padding-bottom: 90px;
 }
 
-/* LOGOUT FIXO */
+/* LOGOUT */
 #logout-area {
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
   background: #f4f6f8;
-  padding: 10px 0;
+  padding: 8px 0;
   text-align: center;
   border-top: 1px solid #ccc;
 }
 
-#logout-area button {
-  width: 90%;
-  max-width: 300px;
+.btn-logout {
+  width: auto;
+  padding: 10px 30px;
+  font-size: 15px;
+  border-radius: 20px;
+  background: black;
+  color: white;
+  border: none;
+  cursor: pointer;
 }
 
 /* DARK MODE */
@@ -108,7 +122,8 @@ button {
   border: 1px solid #444;
 }
 
-.dark button {
+.dark .btn-principal,
+.dark .btn-logout {
   background: white;
   color: black;
 }
@@ -118,7 +133,7 @@ button {
   border-top: 1px solid #333;
 }
 
-/* BOTÃO LUA */
+/* LUA */
 #dark-toggle {
   position: fixed;
   top: 15px;
@@ -141,7 +156,7 @@ button {
 <div id="login">
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Palavra-passe">
-  <button onclick="login()">Entrar / Criar conta</button>
+  <button class="btn-principal" onclick="login()">Entrar / Criar conta</button>
 </div>
 
 <!-- APP -->
@@ -162,7 +177,7 @@ button {
   </select>
 
   <input id="val" type="number" placeholder="Valor (€)">
-  <button onclick="addGasto()">Adicionar gasto</button>
+  <button class="btn-principal" onclick="addGasto()">Adicionar gasto</button>
 
   <h3>Gastos do mês</h3>
   <div id="lista"></div>
@@ -174,8 +189,9 @@ button {
 
 </div>
 
+<!-- LOGOUT -->
 <div id="logout-area" style="display:none">
-  <button onclick="logout()">Sair</button>
+  <button class="btn-logout" onclick="logout()">Sair</button>
 </div>
 
 <script>
@@ -245,7 +261,6 @@ function carregar() {
   let query = db.collection("gastos").where("uid", "==", user.uid);
 
   const mesSelecionado = document.getElementById("mesSelecionado").value;
-
   if (mesSelecionado) {
     const partes = mesSelecionado.split("-");
     query = query
@@ -287,7 +302,6 @@ function apagarGasto(id) {
 
 function desenharGrafico(cats) {
   if (chart) chart.destroy();
-
   chart = new Chart(grafico, {
     type: "pie",
     data: {
