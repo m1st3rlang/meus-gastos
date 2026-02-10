@@ -11,85 +11,125 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
+:root {
+  --bg: #f5f6fa;
+  --card: #ffffff;
+  --text: #111;
+  --muted: #666;
+  --primary: #000;
+}
+
+.dark {
+  --bg: #0f0f10;
+  --card: #1a1a1c;
+  --text: #fff;
+  --muted: #aaa;
+  --primary: #fff;
+}
+
 body {
-  font-family: Arial, sans-serif;
-  background: #121212;
-  padding: 20px;
-  font-size: 18px;
-  color: #fff;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
 }
 
-.container {
-  max-width: 600px;
+.app {
+  max-width: 420px;
   margin: auto;
-  background: #1e1e1e;
   padding: 20px;
-  border-radius: 14px;
 }
 
-h2, h3 {
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.06);
+}
+
+h2 {
   text-align: center;
+  margin-bottom: 20px;
 }
 
 input, select {
   width: 100%;
   padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
   margin-top: 12px;
-  font-size: 16px;
-  background: #2a2a2a;
-  color: #fff;
-  border: 1px solid #444;
+  font-size: 15px;
+  background: transparent;
+  color: var(--text);
+}
+
+.dark input, .dark select {
+  border-color: #333;
 }
 
 button {
-  margin-top: 12px;
-  padding: 14px;
   width: 100%;
+  padding: 14px;
+  border-radius: 14px;
   border: none;
-  border-radius: 10px;
-  font-size: 16px;
+  margin-top: 14px;
+  font-size: 15px;
   cursor: pointer;
 }
 
 .btn-main {
-  background: #fff;
-  color: #000;
+  background: var(--primary);
+  color: var(--bg);
 }
 
-.btn-small {
-  background: #333;
-  color: #fff;
+.btn-light {
+  background: transparent;
+  color: var(--muted);
   font-size: 14px;
 }
 
 .gasto {
   display: flex;
   justify-content: space-between;
-  margin-top: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.dark .gasto {
   border-bottom: 1px solid #333;
-  padding-bottom: 6px;
 }
 
 .apagar {
-  background: transparent;
-  color: #888;
+  background: none;
   border: none;
+  color: var(--muted);
   cursor: pointer;
 }
 
 .apagar:hover {
-  color: #ff5252;
+  color: #ff4d4d;
 }
 
+/* TOGGLE LUA */
+#dark-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+/* LOGOUT */
 #logoutBtn {
   position: fixed;
-  bottom: 20px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: #fff;
-  color: #000;
-  padding: 10px 30px;
+  padding: 12px 28px;
   border-radius: 30px;
+  background: var(--primary);
+  color: var(--bg);
   font-size: 14px;
 }
 </style>
@@ -97,75 +137,80 @@ button {
 
 <body>
 
-<div class="container">
+<div id="dark-toggle" onclick="toggleDark()">🌙</div>
 
-<h2>💰 Gestão de Gastos</h2>
+<div class="app">
 
-<!-- LOGIN -->
-<div id="login">
-  <input id="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Palavra-passe">
-  <button class="btn-main" onclick="login()">Entrar / Criar conta</button>
-</div>
+  <div class="card">
+    <h2>💰 Gestão de Gastos</h2>
 
-<!-- APP -->
-<div id="app" style="display:none">
+    <!-- LOGIN -->
+    <div id="login">
+      <input id="email" placeholder="Email">
+      <input id="password" type="password" placeholder="Palavra-passe">
+      <button class="btn-main" onclick="login()">Entrar / Criar conta</button>
+    </div>
 
-  <!-- MÊS -->
-  <select id="mesSelecionado" onchange="carregar()"></select>
+    <!-- APP -->
+    <div id="app" style="display:none">
 
-  <!-- MOEDA -->
-  <select id="moeda">
-    <option value="€">Euro (€)</option>
-    <option value="$">Dólar ($)</option>
-    <option value="£">Libra (£)</option>
-  </select>
+      <select id="mesSelecionado" onchange="carregar()"></select>
 
-  <!-- CATEGORIA -->
-  <select id="cat"></select>
+      <select id="moeda">
+        <option value="€">Euro (€)</option>
+        <option value="R$">Real (R$)</option>
+        <option value="$">Dólar ($)</option>
+        <option value="£">Libra (£)</option>
+      </select>
 
-  <input id="novaCat" placeholder="Nova categoria">
-  <button class="btn-small" onclick="addCategoria()">Adicionar categoria</button>
+      <select id="cat"></select>
 
-  <!-- DESCRIÇÃO -->
-  <input id="desc" placeholder="Descrição">
+      <input id="novaCat" placeholder="Nova categoria">
+      <button class="btn-light" onclick="addCategoria()">Adicionar categoria</button>
 
-  <!-- VALOR -->
-  <input id="val" type="number" placeholder="Valor">
+      <input id="desc" placeholder="Descrição">
+      <input id="val" type="number" placeholder="Valor">
 
-  <button class="btn-main" onclick="addGasto()">Adicionar gasto</button>
+      <button class="btn-main" onclick="addGasto()">Adicionar gasto</button>
 
-  <h3>Gastos do mês</h3>
-  <div id="lista"></div>
+      <h3 style="margin-top:24px">Gastos do mês</h3>
+      <div id="lista"></div>
 
-  <h3>Total: <span id="total">0.00</span></h3>
+      <h3>Total: <span id="total">0.00</span></h3>
+      <div id="comparacao" style="text-align:center;color:var(--muted)"></div>
 
-  <div id="comparacao" style="text-align:center;margin-top:10px;"></div>
-
-</div>
-
+    </div>
+  </div>
 </div>
 
 <button id="logoutBtn" onclick="logout()" style="display:none">Sair</button>
 
 <script>
 /* FIREBASE */
-const firebaseConfig = {
+firebase.initializeApp({
   apiKey: "AIzaSyA53gz5pwnzSFx4alP2Gb6L7N3qAvXmMdU",
   authDomain: "controle-financeiro-fafd9.firebaseapp.com",
   projectId: "controle-financeiro-fafd9"
-};
+});
 
-firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let user = null;
-
-/* ELEMENTOS */
 const loginDiv = document.getElementById("login");
 const appDiv = document.getElementById("app");
 const logoutBtn = document.getElementById("logoutBtn");
+
+let user = null;
+
+/* DARK MODE */
+function toggleDark() {
+  document.body.classList.toggle("dark");
+  dark-toggle.innerText = document.body.classList.contains("dark") ? "☀️" : "🌙";
+  localStorage.setItem("dark", document.body.classList.contains("dark"));
+}
+if (localStorage.getItem("dark") === "true") {
+  document.body.classList.add("dark");
+}
 
 /* AUTH */
 auth.onAuthStateChanged(u => {
@@ -185,12 +230,9 @@ auth.onAuthStateChanged(u => {
   }
 });
 
-/* LOGIN / LOGOUT */
 function login() {
   auth.signInWithEmailAndPassword(email.value, password.value)
-    .catch(() =>
-      auth.createUserWithEmailAndPassword(email.value, password.value)
-    );
+    .catch(() => auth.createUserWithEmailAndPassword(email.value, password.value));
 }
 
 function logout() {
@@ -200,9 +242,9 @@ function logout() {
 /* CATEGORIAS */
 function carregarCategorias() {
   const base = ["Alimentação","Transporte","Renda","Lazer","Outros"];
-  const guardadas = JSON.parse(localStorage.getItem("cats")) || base;
+  const saved = JSON.parse(localStorage.getItem("cats")) || base;
   cat.innerHTML = "";
-  guardadas.forEach(c => cat.innerHTML += `<option>${c}</option>`);
+  saved.forEach(c => cat.innerHTML += `<option>${c}</option>`);
 }
 
 function addCategoria() {
@@ -219,16 +261,13 @@ function carregarMeses() {
   mesSelecionado.innerHTML = "";
   const ano = new Date().getFullYear();
   const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  meses.forEach((m,i)=> {
-    mesSelecionado.innerHTML += `<option value="${ano}-${i}">${m} ${ano}</option>`;
-  });
+  meses.forEach((m,i)=> mesSelecionado.innerHTML += `<option value="${ano}-${i}">${m} ${ano}</option>`);
 }
 
 /* GASTOS */
 function addGasto() {
-  if (!val.value || !user) return;
+  if (!val.value) return;
   const d = new Date();
-
   db.collection("gastos").add({
     uid: user.uid,
     cat: cat.value,
@@ -238,15 +277,12 @@ function addGasto() {
     mes: d.getMonth(),
     ano: d.getFullYear()
   });
-
   val.value = "";
   desc.value = "";
 }
 
-/* CARREGAR + COMPARAR */
 function carregar() {
   const [ano, mes] = mesSelecionado.value.split("-").map(Number);
-
   db.collection("gastos")
     .where("uid","==",user.uid)
     .where("ano","==",ano)
@@ -254,7 +290,6 @@ function carregar() {
     .onSnapshot(snap => {
       lista.innerHTML = "";
       let totalMes = 0;
-
       snap.forEach(d => {
         const g = d.data();
         totalMes += g.val;
@@ -266,32 +301,7 @@ function carregar() {
             </span>
           </div>`;
       });
-
       total.innerText = totalMes.toFixed(2);
-      compararMeses(ano, mes, totalMes);
-    });
-}
-
-function compararMeses(ano, mes, atual) {
-  const prev = mes - 1;
-  if (prev < 0) {
-    comparacao.innerText = "";
-    return;
-  }
-
-  db.collection("gastos")
-    .where("uid","==",user.uid)
-    .where("ano","==",ano)
-    .where("mes","==",prev)
-    .get()
-    .then(s => {
-      let ant = 0;
-      s.forEach(d => ant += d.data().val);
-      const diff = atual - ant;
-      comparacao.innerText =
-        diff >= 0
-          ? `↑ Gastaste +${diff.toFixed(2)} que o mês passado`
-          : `↓ Gastaste ${Math.abs(diff).toFixed(2)} a menos que o mês passado`;
     });
 }
 </script>
