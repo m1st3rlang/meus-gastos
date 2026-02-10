@@ -108,14 +108,12 @@ button{
   gap:8px;
   align-items:center;
 }
-
 .cat-row button{
   width:auto;
   padding:10px 14px;
   font-size:18px;
   border-radius:50%;
 }
-
 .cat-add{background:#4caf50;color:white;}
 .cat-del{background:#ff6b6b;color:white;}
 
@@ -140,6 +138,9 @@ canvas{margin-top:20px;}
 
 <div id="app" style="display:none">
 
+<!-- 📅 SELETOR DE MÊS -->
+<select id="mesSelecionado"></select>
+
 <!-- SALÁRIO -->
 <div style="position:relative">
   <input id="salario" type="number" placeholder="Salário mensal">
@@ -158,8 +159,8 @@ canvas{margin-top:20px;}
 <!-- CATEGORIAS -->
 <div class="cat-row">
   <select id="cat"></select>
-  <button class="cat-add" title="Adicionar categoria">+</button>
-  <button class="cat-del" title="Apagar categoria">×</button>
+  <button class="cat-add">+</button>
+  <button class="cat-del">×</button>
 </div>
 
 <input id="desc" placeholder="Descrição">
@@ -194,8 +195,23 @@ function setTheme(light){
 setTheme(localStorage.getItem("light")==="true");
 darkToggle.onclick=()=>setTheme(!document.body.classList.contains("light"));
 
+/* MESES */
+function carregarMeses(){
+  const select=mesSelecionado;
+  select.innerHTML="";
+  const agora=new Date();
+  for(let i=0;i<12;i++){
+    const d=new Date(agora.getFullYear(),agora.getMonth()-i,1);
+    const opt=document.createElement("option");
+    opt.value=`${d.getFullYear()}-${d.getMonth()}`;
+    opt.textContent=d.toLocaleString("pt-PT",{month:"long",year:"numeric"});
+    select.appendChild(opt);
+  }
+}
+mesSelecionado.onchange=carregar;
+
 /* CATEGORIAS */
-let categorias = JSON.parse(localStorage.getItem("categorias")) ||
+let categorias=JSON.parse(localStorage.getItem("categorias"))||
 ["Alimentação","Transporte","Renda","Lazer","Outros"];
 
 function renderCategorias(){
@@ -215,11 +231,9 @@ document.querySelector(".cat-add").onclick=()=>{
     renderCategorias();
   }
 };
-
 document.querySelector(".cat-del").onclick=()=>{
-  const atual=cat.value;
-  if(confirm(`Apagar categoria "${atual}"?`)){
-    categorias=categorias.filter(c=>c!==atual);
+  if(confirm(`Apagar categoria "${cat.value}"?`)){
+    categorias=categorias.filter(c=>c!==cat.value);
     renderCategorias();
   }
 };
@@ -231,6 +245,7 @@ auth.onAuthStateChanged(u=>{
     app.style.display="block";
     logoutBtn.style.display="block";
     salario.value=localStorage.getItem("salario")||"";
+    carregarMeses();
     renderCategorias();
     carregar();
   }else{
@@ -256,28 +271,27 @@ clearSalario.onclick=()=>{
 /* ADD */
 addBtn.onclick=()=>{
   if(!val.value)return;
-  const d=new Date();
+  const [ano,mes]=mesSelecionado.value.split("-").map(Number);
   db.collection("gastos").add({
     uid:auth.currentUser.uid,
     cat:cat.value,
     desc:desc.value,
     val:+val.value,
-    mes:d.getMonth(),
-    ano:d.getFullYear()
+    mes, ano
   });
   val.value="";desc.value="";
 };
 
 /* LOAD + GRÁFICO + COMPARAÇÃO */
 function carregar(){
-  const now=new Date();
+  const [ano,mes]=mesSelecionado.value.split("-").map(Number);
   const uid=auth.currentUser.uid;
-  let total=0, cats={};
+  let total=0,cats={};
 
   db.collection("gastos")
   .where("uid","==",uid)
-  .where("ano","==",now.getFullYear())
-  .where("mes","==",now.getMonth())
+  .where("ano","==",ano)
+  .where("mes","==",mes)
   .onSnapshot(s=>{
     total=0; cats={};
     s.forEach(d=>{
@@ -287,22 +301,8 @@ function carregar(){
     });
     totalElem.innerText=total.toFixed(2);
     gastosResumo.innerText=total.toFixed(2);
-    const sal=+salario.value||0;
-    saldoResumo.innerText=(sal-total).toFixed(2);
+    saldoResumo.innerText=((+salario.value||0)-total).toFixed(2);
     desenharGrafico(cats);
-  });
-
-  const prev=new Date(now.getFullYear(),now.getMonth()-1,1);
-  let prevTotal=0;
-  db.collection("gastos")
-  .where("uid","==",uid)
-  .where("ano","==",prev.getFullYear())
-  .where("mes","==",prev.getMonth())
-  .get().then(s=>{
-    s.forEach(d=>prevTotal+=d.data().val);
-    const diff=total-prevTotal;
-    comparacao.innerText=
-      `Mês anterior: € ${prevTotal.toFixed(2)} • Diferença: ${diff>=0?"↑":"↓"} € ${Math.abs(diff).toFixed(2)}`;
   });
 }
 
@@ -310,10 +310,7 @@ function desenharGrafico(cats){
   if(chart)chart.destroy();
   chart=new Chart(grafico,{
     type:"doughnut",
-    data:{
-      labels:Object.keys(cats),
-      datasets:[{data:Object.values(cats)}]
-    }
+    data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats)}]}
   });
 }
 </script>
