@@ -8,7 +8,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 :root{
@@ -27,7 +26,7 @@ body{
 }
 .app{max-width:420px;margin:auto;padding:20px;}
 .card{background:var(--card);border-radius:20px;padding:20px;}
-h2{text-align:center;}
+h2{text-align:center;margin-top:0;}
 
 input,select{
   width:100%;
@@ -38,11 +37,9 @@ input,select{
   background:#111;
   color:var(--text);
 }
-.light input,.light select{
-  background:#fff;border-color:#ddd;
-}
+.light input,.light select{background:#fff;border-color:#ddd;}
 
-.btn-main{
+button{
   width:100%;
   padding:14px;
   margin-top:16px;
@@ -54,25 +51,6 @@ input,select{
   cursor:pointer;
 }
 
-/* ===== CATEGORIA ===== */
-.cat-row{
-  position:relative;
-}
-.delete-cat{
-  position:absolute;
-  right:12px;
-  top:50%;
-  transform:translateY(-50%);
-  background:none;
-  border:none;
-  font-size:16px;
-  color:#ff6b6b;
-  cursor:pointer;
-  display:none;
-}
-.delete-cat:hover{opacity:.7}
-
-/* ===== BOTÕES FIXOS ===== */
 #darkToggle{
   position:fixed;
   top:16px;
@@ -80,6 +58,7 @@ input,select{
   font-size:22px;
   cursor:pointer;
 }
+
 #logoutBtn{
   position:fixed;
   bottom:24px;
@@ -92,27 +71,33 @@ input,select{
   border:none;
   font-size:14px;
   cursor:pointer;
-  width:auto;            /* 👈 importante */
+  width:auto;
 }
 
-/* LISTA */
-.lista{margin-top:10px;}
-.gasto-card{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:14px;
+.resumo{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
   margin-top:10px;
-  background:rgba(255,255,255,.05);
+}
+.resumo div{
+  background:rgba(255,255,255,.06);
+  padding:14px;
   border-radius:14px;
+  text-align:center;
 }
-.light .gasto-card{background:#f6f4ff;}
-.apagar{
-  background:none;
-  border:none;
-  color:var(--muted);
-  cursor:pointer;
+.light .resumo div{background:#f6f4ff;}
+
+.alerta{
+  margin-top:12px;
+  padding:12px;
+  border-radius:12px;
+  font-size:14px;
+  text-align:center;
 }
+.alerta.ok{background:#1f7a3f;}
+.alerta.warn{background:#8a6d1d;}
+.alerta.danger{background:#7a1f1f;}
 </style>
 </head>
 
@@ -128,36 +113,25 @@ input,select{
 <div id="login">
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Palavra-passe">
-  <button class="btn-main" id="loginBtn">Entrar / Criar conta</button>
+  <button id="loginBtn">Entrar / Criar conta</button>
 </div>
 
 <div id="app" style="display:none">
 
-<select id="mesSelecionado"></select>
+<input id="salario" type="number" placeholder="Salário mensal">
 
-<select id="moeda">
-  <option value="€">Euro (€)</option>
-  <option value="R$">Real (R$)</option>
-  <option value="$">Dólar ($)</option>
-  <option value="£">Libra (£)</option>
-</select>
-
-<div class="cat-row">
-  <select id="cat"></select>
-  <button id="deleteCatBtn" class="delete-cat">🗑</button>
+<div class="resumo">
+  <div>💸 Gastos<br><strong id="gastosResumo">0.00</strong></div>
+  <div>🟢 Saldo<br><strong id="saldoResumo">0.00</strong></div>
 </div>
 
+<div id="alertaBox"></div>
+
 <input id="desc" placeholder="Descrição">
-<input id="val" type="number" placeholder="Valor">
+<input id="val" type="number" placeholder="Valor (€)">
+<button id="addBtn">Adicionar gasto</button>
 
-<button class="btn-main" id="addBtn">Adicionar gasto</button>
-
-<h3>Gastos do mês</h3>
-<div id="lista"></div>
-
-<h3>Total: <span id="total">0.00</span></h3>
-<div id="comparacao"></div>
-<canvas id="grafico"></canvas>
+<h3>Total do mês: € <span id="total">0.00</span></h3>
 
 </div>
 </div>
@@ -173,15 +147,11 @@ firebase.initializeApp({
 });
 const auth=firebase.auth(), db=firebase.firestore();
 
-const baseCats=["Alimentação","Transporte","Renda","Lazer","Outros"];
-function getCats(){return JSON.parse(localStorage.getItem("cats"))||baseCats;}
-function saveCats(c){localStorage.setItem("cats",JSON.stringify(c));}
-
 /* THEME */
-function setTheme(l){
-  document.body.classList.toggle("light",l);
-  darkToggle.innerText=l?"🌙":"☀️";
-  localStorage.setItem("light",l);
+function setTheme(light){
+  document.body.classList.toggle("light",light);
+  darkToggle.innerText=light?"🌙":"☀️";
+  localStorage.setItem("light",light);
 }
 setTheme(localStorage.getItem("light")==="true");
 darkToggle.onclick=()=>setTheme(!document.body.classList.contains("light"));
@@ -192,7 +162,8 @@ auth.onAuthStateChanged(u=>{
     login.style.display="none";
     app.style.display="block";
     logoutBtn.style.display="block";
-    carregarMeses(); carregarCategorias(); carregar();
+    salario.value=localStorage.getItem("salario")||"";
+    carregar();
   }else{
     login.style.display="block";
     app.style.display="none";
@@ -203,50 +174,8 @@ loginBtn.onclick=()=>auth.signInWithEmailAndPassword(email.value,password.value)
 .catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
 logoutBtn.onclick=()=>auth.signOut();
 
-/* CATEGORIAS */
-function carregarCategorias(){
-  const c=getCats();
-  cat.innerHTML="";
-  c.forEach(x=>cat.innerHTML+=`<option>${x}</option>`);
-  cat.innerHTML+=`<option value="__add">➕ Adicionar categoria</option>`;
-  updateDeleteCat();
-}
-cat.onchange=()=>{
-  if(cat.value==="__add"){
-    const nome=prompt("Nome da nova categoria:");
-    if(nome){
-      const c=getCats(); c.push(nome); saveCats(c);
-      carregarCategorias(); cat.value=nome;
-    }else cat.selectedIndex=0;
-  }
-  updateDeleteCat();
-};
-function updateDeleteCat(){
-  deleteCatBtn.style.display=
-    baseCats.includes(cat.value)||cat.value==="__add"?"none":"block";
-}
-deleteCatBtn.onclick=()=>{
-  if(confirm(`Queres apagar a categoria "${cat.value}"?`)){
-    saveCats(getCats().filter(c=>c!==cat.value));
-    carregarCategorias();
-  }
-};
-
-/* MESES */
-function carregarMeses(){
-  mesSelecionado.innerHTML="";
-  const a=new Date().getFullYear();
-  ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
-  .forEach((m,i)=>mesSelecionado.innerHTML+=`<option value="${a}-${i}">${m} ${a}</option>`);
-}
-mesSelecionado.onchange=carregar;
-
-/* APAGAR GASTO */
-function apagarGasto(id){
-  if(confirm("Tens a certeza que queres apagar este gasto?")){
-    db.collection("gastos").doc(id).delete();
-  }
-}
+/* SALÁRIO */
+salario.onchange=()=>localStorage.setItem("salario",salario.value);
 
 /* GASTOS */
 addBtn.onclick=()=>{
@@ -254,39 +183,40 @@ addBtn.onclick=()=>{
   const d=new Date();
   db.collection("gastos").add({
     uid:auth.currentUser.uid,
-    cat:cat.value, desc:desc.value,
-    val:+val.value, moeda:moeda.value,
-    mes:d.getMonth(), ano:d.getFullYear()
+    val:+val.value,
+    mes:d.getMonth(),
+    ano:d.getFullYear()
   });
   val.value=""; desc.value="";
 };
 
 function carregar(){
-  const [ano,mes]=mesSelecionado.value.split("-").map(Number);
+  const d=new Date();
   db.collection("gastos")
   .where("uid","==",auth.currentUser.uid)
-  .where("ano","==",ano)
-  .where("mes","==",mes)
+  .where("ano","==",d.getFullYear())
+  .where("mes","==",d.getMonth())
   .onSnapshot(s=>{
-    lista.innerHTML="";
-    let totalMes=0, cats={};
-    s.forEach(d=>{
-      const g=d.data();
-      totalMes+=g.val;
-      cats[g.cat]=(cats[g.cat]||0)+g.val;
-      lista.innerHTML+=`
-        <div class="gasto-card">
-          <div>
-            <strong>${g.cat}</strong><br>
-            <small>${g.desc}</small>
-          </div>
-          <div>
-            <strong>${g.moeda}${g.val.toFixed(2)}</strong>
-            <button class="apagar" onclick="apagarGasto('${d.id}')">🗑</button>
-          </div>
-        </div>`;
-    });
+    let totalMes=0;
+    s.forEach(doc=>totalMes+=doc.data().val);
     total.innerText=totalMes.toFixed(2);
+    gastosResumo.innerText=totalMes.toFixed(2);
+
+    const sal=+salario.value||0;
+    const saldo=sal-totalMes;
+    saldoResumo.innerText=saldo.toFixed(2);
+
+    alertaBox.innerHTML="";
+    if(!sal) return;
+    const perc=totalMes/sal;
+
+    if(perc>1){
+      alertaBox.innerHTML='<div class="alerta danger">🔴 Ultrapassaste o teu salário</div>';
+    }else if(perc>0.8){
+      alertaBox.innerHTML='<div class="alerta warn">⚠️ Já gastaste mais de 80%</div>';
+    }else{
+      alertaBox.innerHTML='<div class="alerta ok">👏 Estás a controlar bem os gastos</div>';
+    }
   });
 }
 </script>
