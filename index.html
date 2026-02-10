@@ -10,130 +10,73 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
+<!-- Chart -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-:root {
-  --bg:#f5f6fa;
-  --card:#ffffff;
-  --text:#111;
-  --muted:#666;
-  --primary:#000;
+:root{
+  --bg:#0f0f10;--card:#1a1a1c;--text:#fff;--muted:#aaa;--primary:#fff;
+}
+body{
+  margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:var(--bg);color:var(--text);
+}
+.app{max-width:420px;margin:auto;padding:20px;}
+.card{
+  background:var(--card);border-radius:20px;padding:20px;
+  box-shadow:0 15px 40px rgba(0,0,0,.4);
+}
+h2{text-align:center;margin-bottom:20px;}
+input,select{
+  width:100%;padding:14px;margin-top:12px;border-radius:14px;
+  background:#111;border:1px solid #333;color:#fff;font-size:15px;
+}
+button{
+  width:100%;padding:14px;margin-top:14px;border:none;
+  border-radius:16px;font-size:15px;cursor:pointer;
+}
+.btn-main{background:#fff;color:#000;}
+.btn-light{background:none;color:var(--muted);font-size:14px;}
+
+#dark-toggle{
+  position:fixed;top:16px;right:16px;font-size:22px;cursor:pointer;
 }
 
-.dark {
-  --bg:#0f0f10;
-  --card:#1a1a1c;
-  --text:#fff;
-  --muted:#aaa;
-  --primary:#fff;
+/* LISTA DE GASTOS */
+.lista{margin-top:10px;}
+.gasto-card{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px;margin-top:10px;
+  background:#141416;border-radius:14px;
+  animation:fadeIn .25s ease;
+}
+.gasto-info{
+  display:flex;flex-direction:column;
+}
+.gasto-cat{font-size:13px;color:var(--muted);}
+.gasto-desc{font-size:15px;margin-top:2px;}
+.gasto-val{
+  font-weight:600;font-size:15px;
+}
+.apagar{
+  background:none;border:none;color:#666;font-size:16px;
+  cursor:pointer;margin-left:10px;opacity:0;
+}
+.gasto-card:hover .apagar{opacity:1;}
+.apagar:hover{color:#ff4d4d;}
+
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(6px);}
+  to{opacity:1;transform:translateY(0);}
 }
 
-body {
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  background:var(--bg);
-  color:var(--text);
-}
-
-.app {
-  max-width:420px;
-  margin:auto;
-  padding:20px;
-}
-
-.card {
-  background:var(--card);
-  border-radius:18px;
-  padding:20px;
-  box-shadow:0 10px 30px rgba(0,0,0,.08);
-}
-
-h2 {
-  text-align:center;
-  margin-bottom:20px;
-}
-
-input, select {
-  width:100%;
-  padding:14px;
-  margin-top:12px;
-  border-radius:12px;
-  border:1px solid #ddd;
-  background:transparent;
-  color:var(--text);
-  font-size:15px;
-}
-
-.dark input, .dark select {
-  border-color:#333;
-}
-
-button {
-  width:100%;
-  padding:14px;
-  margin-top:14px;
-  border:none;
-  border-radius:14px;
-  cursor:pointer;
-  font-size:15px;
-}
-
-.btn-main {
-  background:var(--primary);
-  color:var(--bg);
-}
-
-.btn-light {
-  background:transparent;
-  color:var(--muted);
-  font-size:14px;
-}
-
-.gasto {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:10px 0;
-  border-bottom:1px solid #eee;
-}
-
-.dark .gasto {
-  border-bottom:1px solid #333;
-}
-
-.apagar {
-  background:none;
-  border:none;
-  cursor:pointer;
-  color:var(--muted);
-}
-
-.apagar:hover {
-  color:#ff4d4d;
-}
-
-/* BOTÃO LUA */
-#dark-toggle {
-  position:fixed;
-  top:16px;
-  right:16px;
-  font-size:22px;
-  cursor:pointer;
-}
-
-/* BOTÃO SAIR — CORRIGIDO */
-#logoutBtn {
-  width:auto;
-  min-width:120px;
-  padding:10px 28px;
-  border-radius:999px;
-  font-size:14px;
-  background:var(--primary);
-  color:var(--bg);
-  position:fixed;
-  bottom:24px;
-  left:50%;
+/* LOGOUT */
+#logoutBtn{
+  width:auto;min-width:120px;
+  padding:10px 28px;border-radius:999px;
+  background:#fff;color:#000;font-size:14px;
+  position:fixed;bottom:24px;left:50%;
   transform:translateX(-50%);
-  box-shadow:0 8px 20px rgba(0,0,0,.35);
 }
 </style>
 </head>
@@ -177,9 +120,12 @@ button {
       <button class="btn-main" onclick="addGasto()">Adicionar gasto</button>
 
       <h3 style="margin-top:24px">Gastos do mês</h3>
-      <div id="lista"></div>
+      <div class="lista" id="lista"></div>
 
       <h3>Total: <span id="total">0.00</span></h3>
+      <div id="comparacao" style="text-align:center;color:var(--muted)"></div>
+
+      <canvas id="grafico" style="margin-top:20px"></canvas>
 
     </div>
 
@@ -194,124 +140,107 @@ firebase.initializeApp({
   authDomain:"controle-financeiro-fafd9.firebaseapp.com",
   projectId:"controle-financeiro-fafd9"
 });
+const auth=firebase.auth();
+const db=firebase.firestore();
 
-const auth = firebase.auth();
-const db = firebase.firestore();
+const loginDiv=login, appDiv=app, logoutBtn=document.getElementById("logoutBtn");
+const darkToggle=document.getElementById("dark-toggle");
+let user, chart;
 
-const loginDiv = document.getElementById("login");
-const appDiv = document.getElementById("app");
-const logoutBtn = document.getElementById("logoutBtn");
-const darkToggle = document.getElementById("dark-toggle");
-
-let user = null;
-
-/* DARK MODE */
-darkToggle.onclick = () => {
+darkToggle.onclick=()=>{
   document.body.classList.toggle("dark");
-  darkToggle.innerText = document.body.classList.contains("dark") ? "☀️" : "🌙";
-  localStorage.setItem("dark", document.body.classList.contains("dark"));
+  darkToggle.innerText=document.body.classList.contains("dark")?"☀️":"🌙";
 };
 
-if (localStorage.getItem("dark") === "true") {
-  document.body.classList.add("dark");
-  darkToggle.innerText = "☀️";
-}
-
-/* AUTH */
-auth.onAuthStateChanged(u => {
-  if (u) {
-    user = u;
-    loginDiv.style.display = "none";
-    appDiv.style.display = "block";
-    logoutBtn.style.display = "block";
-    carregarMeses();
-    carregarCategorias();
-    carregar();
-  } else {
-    user = null;
-    loginDiv.style.display = "block";
-    appDiv.style.display = "none";
-    logoutBtn.style.display = "none";
+auth.onAuthStateChanged(u=>{
+  if(u){
+    user=u;loginDiv.style.display="none";
+    appDiv.style.display="block";logoutBtn.style.display="block";
+    carregarMeses();carregarCategorias();carregar();
+  }else{
+    loginDiv.style.display="block";appDiv.style.display="none";
+    logoutBtn.style.display="none";
   }
 });
 
-function login() {
-  auth.signInWithEmailAndPassword(email.value, password.value)
-    .catch(() =>
-      auth.createUserWithEmailAndPassword(email.value, password.value)
-    );
+function login(){
+  auth.signInWithEmailAndPassword(email.value,password.value)
+  .catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
 }
+function logout(){auth.signOut();}
 
-function logout() {
-  auth.signOut();
+function carregarCategorias(){
+  const base=["Alimentação","Transporte","Renda","Lazer","Outros"];
+  const cats=JSON.parse(localStorage.getItem("cats"))||base;
+  cat.innerHTML="";cats.forEach(c=>cat.innerHTML+=`<option>${c}</option>`);
 }
-
-/* CATEGORIAS */
-function carregarCategorias() {
-  const base = ["Alimentação","Transporte","Renda","Lazer","Outros"];
-  const cats = JSON.parse(localStorage.getItem("cats")) || base;
-  cat.innerHTML = "";
-  cats.forEach(c => cat.innerHTML += `<option>${c}</option>`);
+function addCategoria(){
+  if(!novaCat.value)return;
+  const cats=JSON.parse(localStorage.getItem("cats"))||[];
+  cats.push(novaCat.value);localStorage.setItem("cats",JSON.stringify(cats));
+  novaCat.value="";carregarCategorias();
 }
-
-function addCategoria() {
-  if (!novaCat.value) return;
-  const cats = JSON.parse(localStorage.getItem("cats")) || [];
-  cats.push(novaCat.value);
-  localStorage.setItem("cats", JSON.stringify(cats));
-  novaCat.value = "";
-  carregarCategorias();
+function carregarMeses(){
+  mesSelecionado.innerHTML="";
+  const ano=new Date().getFullYear();
+  const m=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  m.forEach((n,i)=>mesSelecionado.innerHTML+=`<option value="${ano}-${i}">${n} ${ano}</option>`);
 }
-
-/* MESES */
-function carregarMeses() {
-  mesSelecionado.innerHTML = "";
-  const ano = new Date().getFullYear();
-  const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  meses.forEach((m,i)=> {
-    mesSelecionado.innerHTML += `<option value="${ano}-${i}">${m} ${ano}</option>`;
-  });
-}
-
-/* GASTOS */
-function addGasto() {
-  if (!val.value || !user) return;
-  const d = new Date();
+function addGasto(){
+  if(!val.value)return;
+  const d=new Date();
   db.collection("gastos").add({
-    uid:user.uid,
-    cat:cat.value,
-    desc:desc.value,
-    val:Number(val.value),
-    moeda:moeda.value,
-    mes:d.getMonth(),
-    ano:d.getFullYear()
+    uid:user.uid,cat:cat.value,desc:desc.value,
+    val:+val.value,moeda:moeda.value,mes:d.getMonth(),ano:d.getFullYear()
   });
-  val.value = "";
-  desc.value = "";
+  val.value="";desc.value="";
 }
-
-function carregar() {
-  const [ano, mes] = mesSelecionado.value.split("-").map(Number);
-  db.collection("gastos")
-    .where("uid","==",user.uid)
-    .where("ano","==",ano)
-    .where("mes","==",mes)
-    .onSnapshot(snap => {
-      lista.innerHTML = "";
-      let totalMes = 0;
-      snap.forEach(d => {
-        const g = d.data();
-        totalMes += g.val;
-        lista.innerHTML += `
-          <div class="gasto">
-            <span>${g.cat} • ${g.desc}</span>
-            <span>${g.moeda}${g.val.toFixed(2)}
-              <button class="apagar" onclick="db.collection('gastos').doc('${d.id}').delete()">🗑</button>
-            </span>
-          </div>`;
-      });
-      total.innerText = totalMes.toFixed(2);
+function carregar(){
+  const [ano,mes]=mesSelecionado.value.split("-").map(Number);
+  db.collection("gastos").where("uid","==",user.uid)
+  .where("ano","==",ano).where("mes","==",mes)
+  .onSnapshot(s=>{
+    lista.innerHTML="";let totalMes=0,cats={};
+    s.forEach(d=>{
+      const g=d.data();totalMes+=g.val;
+      cats[g.cat]=(cats[g.cat]||0)+g.val;
+      lista.innerHTML+=`
+      <div class="gasto-card">
+        <div class="gasto-info">
+          <span class="gasto-cat">${g.cat}</span>
+          <span class="gasto-desc">${g.desc}</span>
+        </div>
+        <div>
+          <span class="gasto-val">${g.moeda}${g.val.toFixed(2)}</span>
+          <button class="apagar" onclick="db.collection('gastos').doc('${d.id}').delete()">🗑</button>
+        </div>
+      </div>`;
     });
+    total.innerText=totalMes.toFixed(2);
+    compararMeses(ano,mes,totalMes);
+    desenharGrafico(cats);
+  });
+}
+function compararMeses(a,m,atual){
+  if(m===0){comparacao.innerText="";return;}
+  db.collection("gastos").where("uid","==",user.uid)
+  .where("ano","==",a).where("mes","==",m-1)
+  .get().then(s=>{
+    let ant=0;s.forEach(d=>ant+=d.data().val);
+    const diff=atual-ant;
+    comparacao.innerText=diff>=0
+      ?`↑ Gastaste +${diff.toFixed(2)} que o mês passado`
+      :`↓ Gastaste ${Math.abs(diff).toFixed(2)} a menos que o mês passado`;
+  });
+}
+function desenharGrafico(cats){
+  if(chart)chart.destroy();
+  chart=new Chart(grafico,{
+    type:"doughnut",
+    data:{labels:Object.keys(cats),
+    datasets:[{data:Object.values(cats)}]},
+    options:{plugins:{legend:{labels:{color:"#aaa"}}}}
+  });
 }
 </script>
 
