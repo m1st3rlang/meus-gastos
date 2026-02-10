@@ -8,36 +8,23 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 :root{
-  --bg:#0f0f10;
-  --card:#1a1a1c;
-  --text:#ffffff;
-  --muted:#aaa;
-  --primary:#ffffff;
-  --primary-text:#000000;
-  --input:#111;
-  --border:#333;
+  --bg:#0f0f10; --card:#1a1a1c; --text:#fff; --muted:#aaa;
+  --primary:#fff; --primary-text:#000; --input:#111; --border:#333;
 }
 .light{
-  --bg:#f3efff;
-  --card:#ffffff;
-  --text:#2b1d4f;
-  --muted:#6b5ca5;
-  --primary:#6c4cff;
-  --primary-text:#ffffff;
-  --input:#ffffff;
-  --border:#d8d0ff;
+  --bg:#f3efff; --card:#fff; --text:#2b1d4f; --muted:#6b5ca5;
+  --primary:#6c4cff; --primary-text:#fff; --input:#fff; --border:#d8d0ff;
 }
-
 body{
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   background:var(--bg);
   color:var(--text);
 }
-
 .app{max-width:420px;margin:auto;padding:20px;}
 .card{
   background:var(--card);
@@ -45,7 +32,6 @@ body{
   padding:20px;
   box-shadow:0 15px 40px rgba(0,0,0,.25);
 }
-
 h2{text-align:center;}
 
 input,select{
@@ -88,6 +74,13 @@ button{
 }
 .light .dashboard div{background:#f6f4ff;}
 
+.compare{
+  margin-top:14px;
+  font-size:14px;
+  text-align:center;
+  color:var(--muted);
+}
+
 #darkToggle{
   position:fixed;
   top:16px;
@@ -109,6 +102,7 @@ button{
   left:50%;
   transform:translateX(-50%);
 }
+canvas{margin-top:20px;}
 </style>
 </head>
 
@@ -142,20 +136,17 @@ button{
   <div>🟢 Saldo<br><strong id="saldoResumo">0.00</strong></div>
 </div>
 
-<!-- ✅ CATEGORIA -->
-<select id="cat">
-  <option>Alimentação</option>
-  <option>Transporte</option>
-  <option>Renda</option>
-  <option>Lazer</option>
-  <option>Outros</option>
-</select>
+<div class="compare" id="comparacao"></div>
+
+<select id="cat"></select>
 
 <input id="desc" placeholder="Descrição">
 <input id="val" type="number" placeholder="Valor (€)">
 <button class="btn-main" id="addBtn">Adicionar gasto</button>
 
 <h3>Total do mês: € <span id="total">0.00</span></h3>
+
+<canvas id="grafico"></canvas>
 
 </div>
 </div>
@@ -171,6 +162,8 @@ firebase.initializeApp({
 });
 const auth=firebase.auth(), db=firebase.firestore();
 
+let chart=null;
+
 /* TEMA */
 function setTheme(light){
   document.body.classList.toggle("light",light);
@@ -180,6 +173,17 @@ function setTheme(light){
 setTheme(localStorage.getItem("light")==="true");
 darkToggle.onclick=()=>setTheme(!document.body.classList.contains("light"));
 
+/* CATEGORIAS */
+const categorias=["Alimentação","Transporte","Renda","Lazer","Outros"];
+function carregarCategorias(){
+  cat.innerHTML="";
+  categorias.forEach(c=>{
+    const o=document.createElement("option");
+    o.textContent=c;
+    cat.appendChild(o);
+  });
+}
+
 /* AUTH */
 auth.onAuthStateChanged(u=>{
   if(u){
@@ -187,6 +191,7 @@ auth.onAuthStateChanged(u=>{
     app.style.display="block";
     logoutBtn.style.display="block";
     salario.value=localStorage.getItem("salario")||"";
+    carregarCategorias();
     carregar();
   }else{
     login.style.display="block";
@@ -208,7 +213,7 @@ clearSalario.onclick=()=>{
   }
 };
 
-/* GASTOS */
+/* ADD */
 addBtn.onclick=()=>{
   if(!val.value)return;
   const d=new Date();
@@ -223,20 +228,54 @@ addBtn.onclick=()=>{
   val.value="";desc.value="";
 };
 
+/* LOAD + GRÁFICO + COMPARAÇÃO */
 function carregar(){
-  const d=new Date();
-  db.collection("gastos")
-  .where("uid","==",auth.currentUser.uid)
-  .where("ano","==",d.getFullYear())
-  .where("mes","==",d.getMonth())
-  .onSnapshot(s=>{
-    let totalMes=0;
-    s.forEach(doc=>totalMes+=doc.data().val);
-    total.innerText=totalMes.toFixed(2);
-    gastosResumo.innerText=totalMes.toFixed(2);
+  const now=new Date();
+  const uid=auth.currentUser.uid;
+  let total=0, cats={};
 
+  db.collection("gastos")
+  .where("uid","==",uid)
+  .where("ano","==",now.getFullYear())
+  .where("mes","==",now.getMonth())
+  .onSnapshot(s=>{
+    total=0; cats={};
+    s.forEach(d=>{
+      const g=d.data();
+      total+=g.val;
+      cats[g.cat]=(cats[g.cat]||0)+g.val;
+    });
+    totalSpan=total;
+    totalElem.innerText=total.toFixed(2);
+    gastosResumo.innerText=total.toFixed(2);
     const sal=+salario.value||0;
-    saldoResumo.innerText=(sal-totalMes).toFixed(2);
+    saldoResumo.innerText=(sal-total).toFixed(2);
+    desenharGrafico(cats);
+  });
+
+  /* comparação */
+  const prev=new Date(now.getFullYear(),now.getMonth()-1,1);
+  let prevTotal=0;
+  db.collection("gastos")
+  .where("uid","==",uid)
+  .where("ano","==",prev.getFullYear())
+  .where("mes","==",prev.getMonth())
+  .get().then(s=>{
+    s.forEach(d=>prevTotal+=d.data().val);
+    const diff=total-prevTotal;
+    comparacao.innerText=
+      `Mês anterior: € ${prevTotal.toFixed(2)} • Diferença: ${diff>=0?"↑":"↓"} € ${Math.abs(diff).toFixed(2)}`;
+  });
+}
+
+function desenharGrafico(cats){
+  if(chart)chart.destroy();
+  chart=new Chart(grafico,{
+    type:"doughnut",
+    data:{
+      labels:Object.keys(cats),
+      datasets:[{data:Object.values(cats)}]
+    }
   });
 }
 </script>
