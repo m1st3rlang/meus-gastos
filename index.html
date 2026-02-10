@@ -12,26 +12,47 @@
 
 <style>
 :root {
-  --bg:#f5f6fa; --card:#fff; --text:#111; --muted:#666; --primary:#000;
+  --bg:#f5f6fa;
+  --card:#ffffff;
+  --text:#111;
+  --muted:#666;
+  --primary:#000;
 }
+
 .dark {
-  --bg:#0f0f10; --card:#1a1a1c; --text:#fff; --muted:#aaa; --primary:#fff;
+  --bg:#0f0f10;
+  --card:#1a1a1c;
+  --text:#fff;
+  --muted:#aaa;
+  --primary:#fff;
 }
+
 body {
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   background:var(--bg);
   color:var(--text);
 }
-.app { max-width:420px; margin:auto; padding:20px; }
+
+.app {
+  max-width:420px;
+  margin:auto;
+  padding:20px;
+}
+
 .card {
   background:var(--card);
   border-radius:18px;
   padding:20px;
   box-shadow:0 10px 30px rgba(0,0,0,.08);
 }
-h2 { text-align:center; }
-input,select {
+
+h2 {
+  text-align:center;
+  margin-bottom:20px;
+}
+
+input, select {
   width:100%;
   padding:14px;
   margin-top:12px;
@@ -39,8 +60,13 @@ input,select {
   border:1px solid #ddd;
   background:transparent;
   color:var(--text);
+  font-size:15px;
 }
-.dark input,.dark select { border-color:#333; }
+
+.dark input, .dark select {
+  border-color:#333;
+}
+
 button {
   width:100%;
   padding:14px;
@@ -50,24 +76,42 @@ button {
   cursor:pointer;
   font-size:15px;
 }
-.btn-main { background:var(--primary); color:var(--bg); }
-.btn-light { background:transparent; color:var(--muted); font-size:14px; }
+
+.btn-main {
+  background:var(--primary);
+  color:var(--bg);
+}
+
+.btn-light {
+  background:transparent;
+  color:var(--muted);
+  font-size:14px;
+}
 
 .gasto {
   display:flex;
   justify-content:space-between;
+  align-items:center;
   padding:10px 0;
   border-bottom:1px solid #eee;
 }
-.dark .gasto { border-bottom:1px solid #333; }
+
+.dark .gasto {
+  border-bottom:1px solid #333;
+}
+
 .apagar {
   background:none;
   border:none;
   cursor:pointer;
   color:var(--muted);
 }
-.apagar:hover { color:#ff4d4d; }
 
+.apagar:hover {
+  color:#ff4d4d;
+}
+
+/* BOTÃO LUA */
 #dark-toggle {
   position:fixed;
   top:16px;
@@ -75,15 +119,21 @@ button {
   font-size:22px;
   cursor:pointer;
 }
+
+/* BOTÃO SAIR — CORRIGIDO */
 #logoutBtn {
+  width:auto;
+  min-width:120px;
+  padding:10px 28px;
+  border-radius:999px;
+  font-size:14px;
+  background:var(--primary);
+  color:var(--bg);
   position:fixed;
   bottom:24px;
   left:50%;
   transform:translateX(-50%);
-  padding:12px 28px;
-  border-radius:30px;
-  background:var(--primary);
-  color:var(--bg);
+  box-shadow:0 8px 20px rgba(0,0,0,.35);
 }
 </style>
 </head>
@@ -94,15 +144,19 @@ button {
 
 <div class="app">
   <div class="card">
+
     <h2>💰 Gestão de Gastos</h2>
 
+    <!-- LOGIN -->
     <div id="login">
       <input id="email" placeholder="Email">
       <input id="password" type="password" placeholder="Palavra-passe">
       <button class="btn-main" onclick="login()">Entrar / Criar conta</button>
     </div>
 
+    <!-- APP -->
     <div id="app" style="display:none">
+
       <select id="mesSelecionado" onchange="carregar()"></select>
 
       <select id="moeda">
@@ -122,10 +176,13 @@ button {
 
       <button class="btn-main" onclick="addGasto()">Adicionar gasto</button>
 
-      <h3>Gastos do mês</h3>
+      <h3 style="margin-top:24px">Gastos do mês</h3>
       <div id="lista"></div>
+
       <h3>Total: <span id="total">0.00</span></h3>
+
     </div>
+
   </div>
 </div>
 
@@ -137,85 +194,124 @@ firebase.initializeApp({
   authDomain:"controle-financeiro-fafd9.firebaseapp.com",
   projectId:"controle-financeiro-fafd9"
 });
-const auth=firebase.auth();
-const db=firebase.firestore();
 
-const loginDiv=document.getElementById("login");
-const appDiv=document.getElementById("app");
-const logoutBtn=document.getElementById("logoutBtn");
-const darkToggle=document.getElementById("dark-toggle");
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-darkToggle.onclick=()=>{
+const loginDiv = document.getElementById("login");
+const appDiv = document.getElementById("app");
+const logoutBtn = document.getElementById("logoutBtn");
+const darkToggle = document.getElementById("dark-toggle");
+
+let user = null;
+
+/* DARK MODE */
+darkToggle.onclick = () => {
   document.body.classList.toggle("dark");
-  darkToggle.innerText=document.body.classList.contains("dark")?"☀️":"🌙";
-  localStorage.setItem("dark",document.body.classList.contains("dark"));
+  darkToggle.innerText = document.body.classList.contains("dark") ? "☀️" : "🌙";
+  localStorage.setItem("dark", document.body.classList.contains("dark"));
 };
-if(localStorage.getItem("dark")==="true"){
+
+if (localStorage.getItem("dark") === "true") {
   document.body.classList.add("dark");
-  darkToggle.innerText="☀️";
+  darkToggle.innerText = "☀️";
 }
 
-auth.onAuthStateChanged(u=>{
-  if(u){
-    loginDiv.style.display="none";
-    appDiv.style.display="block";
-    logoutBtn.style.display="block";
-    user=u;
+/* AUTH */
+auth.onAuthStateChanged(u => {
+  if (u) {
+    user = u;
+    loginDiv.style.display = "none";
+    appDiv.style.display = "block";
+    logoutBtn.style.display = "block";
     carregarMeses();
     carregarCategorias();
     carregar();
-  }else{
-    loginDiv.style.display="block";
-    appDiv.style.display="none";
-    logoutBtn.style.display="none";
+  } else {
+    user = null;
+    loginDiv.style.display = "block";
+    appDiv.style.display = "none";
+    logoutBtn.style.display = "none";
   }
 });
 
-function login(){
-  auth.signInWithEmailAndPassword(email.value,password.value)
-  .catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
+function login() {
+  auth.signInWithEmailAndPassword(email.value, password.value)
+    .catch(() =>
+      auth.createUserWithEmailAndPassword(email.value, password.value)
+    );
 }
-function logout(){ auth.signOut(); }
 
-function carregarCategorias(){
-  const base=["Alimentação","Transporte","Renda","Lazer","Outros"];
-  const cats=JSON.parse(localStorage.getItem("cats"))||base;
-  cat.innerHTML="";
-  cats.forEach(c=>cat.innerHTML+=`<option>${c}</option>`);
+function logout() {
+  auth.signOut();
 }
-function addCategoria(){
-  if(!novaCat.value)return;
-  const cats=JSON.parse(localStorage.getItem("cats"))||[];
+
+/* CATEGORIAS */
+function carregarCategorias() {
+  const base = ["Alimentação","Transporte","Renda","Lazer","Outros"];
+  const cats = JSON.parse(localStorage.getItem("cats")) || base;
+  cat.innerHTML = "";
+  cats.forEach(c => cat.innerHTML += `<option>${c}</option>`);
+}
+
+function addCategoria() {
+  if (!novaCat.value) return;
+  const cats = JSON.parse(localStorage.getItem("cats")) || [];
   cats.push(novaCat.value);
-  localStorage.setItem("cats",JSON.stringify(cats));
-  novaCat.value="";
+  localStorage.setItem("cats", JSON.stringify(cats));
+  novaCat.value = "";
   carregarCategorias();
 }
-function carregarMeses(){
-  mesSelecionado.innerHTML="";
-  const ano=new Date().getFullYear();
-  const m=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  m.forEach((n,i)=>mesSelecionado.innerHTML+=`<option value="${ano}-${i}">${n} ${ano}</option>`);
+
+/* MESES */
+function carregarMeses() {
+  mesSelecionado.innerHTML = "";
+  const ano = new Date().getFullYear();
+  const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  meses.forEach((m,i)=> {
+    mesSelecionado.innerHTML += `<option value="${ano}-${i}">${m} ${ano}</option>`;
+  });
 }
-function addGasto(){
-  if(!val.value)return;
-  const d=new Date();
+
+/* GASTOS */
+function addGasto() {
+  if (!val.value || !user) return;
+  const d = new Date();
   db.collection("gastos").add({
-    uid:user.uid,cat:cat.value,desc:desc.value,val:+val.value,moeda:moeda.value,mes:d.getMonth(),ano:d.getFullYear()
+    uid:user.uid,
+    cat:cat.value,
+    desc:desc.value,
+    val:Number(val.value),
+    moeda:moeda.value,
+    mes:d.getMonth(),
+    ano:d.getFullYear()
   });
-  val.value="";desc.value="";
+  val.value = "";
+  desc.value = "";
 }
-function carregar(){
-  const [ano,mes]=mesSelecionado.value.split("-").map(Number);
-  db.collection("gastos").where("uid","==",user.uid).where("ano","==",ano).where("mes","==",mes)
-  .onSnapshot(s=>{
-    lista.innerHTML="";let t=0;
-    s.forEach(d=>{
-      const g=d.data();t+=g.val;
-      lista.innerHTML+=`<div class="gasto"><span>${g.cat} • ${g.desc}</span><span>${g.moeda}${g.val.toFixed(2)} <button class="apagar" onclick="db.collection('gastos').doc('${d.id}').delete()">🗑</button></span></div>`;
+
+function carregar() {
+  const [ano, mes] = mesSelecionado.value.split("-").map(Number);
+  db.collection("gastos")
+    .where("uid","==",user.uid)
+    .where("ano","==",ano)
+    .where("mes","==",mes)
+    .onSnapshot(snap => {
+      lista.innerHTML = "";
+      let totalMes = 0;
+      snap.forEach(d => {
+        const g = d.data();
+        totalMes += g.val;
+        lista.innerHTML += `
+          <div class="gasto">
+            <span>${g.cat} • ${g.desc}</span>
+            <span>${g.moeda}${g.val.toFixed(2)}
+              <button class="apagar" onclick="db.collection('gastos').doc('${d.id}').delete()">🗑</button>
+            </span>
+          </div>`;
+      });
+      total.innerText = totalMes.toFixed(2);
     });
-    total.innerText=t.toFixed(2);
-  });
 }
 </script>
 
