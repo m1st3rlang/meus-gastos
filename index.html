@@ -150,7 +150,7 @@ button{
 
 <select id="mesSelecionado"></select>
 
-<!-- 🔥 SALÁRIO COM AÇÕES -->
+<!-- SALÁRIO (mantido + botões) -->
 <div class="row">
   <input id="salario" type="number" placeholder="Salário mensal" disabled>
   <button class="icon-btn add" id="salAdd">+</button>
@@ -164,10 +164,11 @@ button{
   <option value="R$">Real (R$)</option>
 </select>
 
+<!-- ✅ CATEGORIAS RESTAURADAS -->
 <div class="row">
   <select id="cat"></select>
-  <button class="icon-btn add">+</button>
-  <button class="icon-btn del">×</button>
+  <button class="icon-btn add" id="catAdd">+</button>
+  <button class="icon-btn del" id="catDel">×</button>
 </div>
 
 <input id="desc" placeholder="Descrição">
@@ -201,20 +202,45 @@ let chart=null;
 
 darkToggle.onclick=()=>document.body.classList.toggle("light");
 
-/* SALÁRIO */
-const salarioInput = document.getElementById("salario");
-const salAdd = document.getElementById("salAdd");
-const salEdit = document.getElementById("salEdit");
-const salDel = document.getElementById("salDel");
+/* ===== CATEGORIAS (100% FUNCIONAIS) ===== */
+let categorias = JSON.parse(localStorage.getItem("categorias")) ||
+["Alimentação","Transporte","Renda","Lazer","Outros"];
 
+function renderCategorias(){
+  cat.innerHTML="";
+  categorias.forEach(c=>{
+    const o=document.createElement("option");
+    o.textContent=c;
+    cat.appendChild(o);
+  });
+  localStorage.setItem("categorias",JSON.stringify(categorias));
+}
+
+catAdd.onclick=()=>{
+  const nome=prompt("Nova categoria:");
+  if(nome && !categorias.includes(nome)){
+    categorias.push(nome);
+    renderCategorias();
+  }
+};
+
+catDel.onclick=()=>{
+  if(confirm(`Apagar categoria "${cat.value}"?`)){
+    categorias=categorias.filter(c=>c!==cat.value);
+    renderCategorias();
+  }
+};
+
+/* ===== SALÁRIO ===== */
+const salarioInput = salario;
 function carregarSalario(){
-  const s = localStorage.getItem("salario");
+  const s=localStorage.getItem("salario");
   if(s){
-    salarioInput.value = s;
-    salarioInput.disabled = true;
+    salarioInput.value=s;
+    salarioInput.disabled=true;
   }else{
-    salarioInput.value = "";
-    salarioInput.disabled = false;
+    salarioInput.value="";
+    salarioInput.disabled=false;
   }
 }
 salAdd.onclick=()=>{
@@ -237,7 +263,7 @@ salDel.onclick=()=>{
   }
 };
 
-/* AUTH */
+/* ===== AUTH ===== */
 auth.onAuthStateChanged(u=>{
   if(u){
     login.style.display="none";
@@ -245,6 +271,7 @@ auth.onAuthStateChanged(u=>{
     logoutBtn.style.display="block";
     carregarMeses();
     carregarSalario();
+    renderCategorias();
     carregar();
   }else{
     login.style.display="block";
@@ -259,7 +286,7 @@ loginBtn.onclick=()=>auth
 
 logoutBtn.onclick=()=>auth.signOut();
 
-/* MESES */
+/* ===== MESES ===== */
 function carregarMeses(){
   mesSelecionado.innerHTML="";
   const now=new Date();
