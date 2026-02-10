@@ -5,16 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestão de Gastos</title>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<!-- Chart -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
-/* ===== TEMA ===== */
 :root{
   --bg:#0f0f10;
   --card:#1a1a1c;
@@ -36,13 +31,13 @@
   --border:#d8d0ff;
 }
 
-/* ===== BASE ===== */
 body{
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   background:var(--bg);
   color:var(--text);
 }
+
 .app{max-width:420px;margin:auto;padding:20px;}
 .card{
   background:var(--card);
@@ -50,6 +45,7 @@ body{
   padding:20px;
   box-shadow:0 15px 40px rgba(0,0,0,.25);
 }
+
 h2{text-align:center;}
 
 input,select{
@@ -62,6 +58,7 @@ input,select{
   color:var(--text);
   font-size:15px;
 }
+
 button{
   width:100%;
   padding:14px;
@@ -71,12 +68,12 @@ button{
   font-size:15px;
   cursor:pointer;
 }
+
 .btn-main{
   background:var(--primary);
   color:var(--primary-text);
 }
 
-/* ===== DASHBOARD ===== */
 .dashboard{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -88,44 +85,9 @@ button{
   padding:14px;
   border-radius:14px;
   text-align:center;
-  font-size:14px;
 }
 .light .dashboard div{background:#f6f4ff;}
-.dashboard strong{font-size:16px;}
 
-.alerta{
-  margin-top:12px;
-  padding:12px;
-  border-radius:12px;
-  font-size:14px;
-  text-align:center;
-}
-.alerta.ok{background:#1f7a3f;}
-.alerta.warn{background:#8a6d1d;}
-.alerta.danger{background:#7a1f1f;}
-
-/* ===== LISTA ===== */
-.lista{margin-top:10px;}
-.gasto-card{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:14px;
-  margin-top:10px;
-  background:rgba(255,255,255,0.05);
-  border-radius:14px;
-}
-.light .gasto-card{background:#f6f4ff;}
-.gasto-info{display:flex;flex-direction:column;}
-.gasto-cat{font-size:13px;color:var(--muted);}
-.apagar{
-  background:none;
-  border:none;
-  color:var(--muted);
-  cursor:pointer;
-}
-
-/* ===== FIXOS ===== */
 #darkToggle{
   position:fixed;
   top:16px;
@@ -133,6 +95,7 @@ button{
   font-size:22px;
   cursor:pointer;
 }
+
 #logoutBtn{
   width:auto;
   min-width:120px;
@@ -158,31 +121,20 @@ button{
 
 <h2>💰 Gestão de Gastos</h2>
 
-<!-- LOGIN -->
 <div id="login">
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Palavra-passe">
   <button class="btn-main" id="loginBtn">Entrar / Criar conta</button>
 </div>
 
-<!-- APP -->
 <div id="app" style="display:none">
 
 <!-- SALÁRIO -->
 <div style="position:relative">
   <input id="salario" type="number" placeholder="Salário mensal">
   <button id="clearSalario"
-    style="
-      position:absolute;
-      right:10px;
-      top:50%;
-      transform:translateY(-50%);
-      background:none;
-      border:none;
-      font-size:16px;
-      cursor:pointer;
-      color:#ff6b6b;
-    ">🗑</button>
+    style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    background:none;border:none;font-size:16px;color:#ff6b6b;cursor:pointer;">🗑</button>
 </div>
 
 <div class="dashboard">
@@ -190,7 +142,14 @@ button{
   <div>🟢 Saldo<br><strong id="saldoResumo">0.00</strong></div>
 </div>
 
-<div id="alertaBox"></div>
+<!-- ✅ CATEGORIA -->
+<select id="cat">
+  <option>Alimentação</option>
+  <option>Transporte</option>
+  <option>Renda</option>
+  <option>Lazer</option>
+  <option>Outros</option>
+</select>
 
 <input id="desc" placeholder="Descrição">
 <input id="val" type="number" placeholder="Valor (€)">
@@ -241,7 +200,6 @@ logoutBtn.onclick=()=>auth.signOut();
 
 /* SALÁRIO */
 salario.onchange=()=>localStorage.setItem("salario",salario.value);
-
 clearSalario.onclick=()=>{
   if(confirm("Queres apagar o salário mensal?")){
     localStorage.removeItem("salario");
@@ -256,6 +214,8 @@ addBtn.onclick=()=>{
   const d=new Date();
   db.collection("gastos").add({
     uid:auth.currentUser.uid,
+    cat:cat.value,
+    desc:desc.value,
     val:+val.value,
     mes:d.getMonth(),
     ano:d.getFullYear()
@@ -276,19 +236,7 @@ function carregar(){
     gastosResumo.innerText=totalMes.toFixed(2);
 
     const sal=+salario.value||0;
-    const saldo=sal-totalMes;
-    saldoResumo.innerText=saldo.toFixed(2);
-
-    alertaBox.innerHTML="";
-    if(!sal) return;
-    const perc=totalMes/sal;
-    if(perc>1){
-      alertaBox.innerHTML='<div class="alerta danger">🔴 Ultrapassaste o teu salário</div>';
-    }else if(perc>0.8){
-      alertaBox.innerHTML='<div class="alerta warn">⚠️ Já gastaste mais de 80%</div>';
-    }else{
-      alertaBox.innerHTML='<div class="alerta ok">👏 Estás a controlar bem os gastos</div>';
-    }
+    saldoResumo.innerText=(sal-totalMes).toFixed(2);
   });
 }
 </script>
