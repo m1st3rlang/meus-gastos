@@ -68,6 +68,26 @@ button{
 
 .btn-main{width:100%;}
 
+.row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.icon-btn{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  font-size:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.add{background:#4caf50;color:#fff;}
+.edit{background:#ffc107;color:#000;}
+.del{background:#ff6b6b;color:#fff;}
+
 .gasto{
   display:flex;
   justify-content:space-between;
@@ -81,29 +101,12 @@ button{
   border-radius:6px;
 }
 
-.cat-row{
-  display:flex;
-  gap:8px;
-  align-items:center;
-}
-.cat-row select{flex:1;}
-.cat-row button{
-  width:42px;
-  height:42px;
-  border-radius:50%;
-  font-size:18px;
-}
-.cat-add{background:#4caf50;color:white;}
-.cat-del{background:#ff6b6b;color:white;}
-
 .compare{
   margin-top:12px;
   font-size:14px;
   opacity:.85;
   text-align:center;
 }
-
-canvas{margin-top:20px;}
 
 #darkToggle{
   position:fixed;
@@ -123,7 +126,6 @@ canvas{margin-top:20px;}
   background:var(--primary);
   color:var(--primary-text);
   font-size:14px;
-  box-shadow:0 10px 25px rgba(0,0,0,.4);
   width:auto;
 }
 </style>
@@ -148,19 +150,24 @@ canvas{margin-top:20px;}
 
 <select id="mesSelecionado"></select>
 
-<input id="salario" type="number" placeholder="Salário mensal">
+<!-- 🔥 SALÁRIO COM AÇÕES -->
+<div class="row">
+  <input id="salario" type="number" placeholder="Salário mensal" disabled>
+  <button class="icon-btn add" id="salAdd">+</button>
+  <button class="icon-btn edit" id="salEdit">✏️</button>
+  <button class="icon-btn del" id="salDel">🗑</button>
+</div>
 
-<!-- ✅ MOEDA -->
 <select id="moeda">
   <option value="€">Euro (€)</option>
   <option value="$">Dólar ($)</option>
   <option value="R$">Real (R$)</option>
 </select>
 
-<div class="cat-row">
+<div class="row">
   <select id="cat"></select>
-  <button class="cat-add">+</button>
-  <button class="cat-del">×</button>
+  <button class="icon-btn add">+</button>
+  <button class="icon-btn del">×</button>
 </div>
 
 <input id="desc" placeholder="Descrição">
@@ -173,7 +180,6 @@ canvas{margin-top:20px;}
 <div id="lista"></div>
 
 <h3>Total: <span id="total">0.00</span></h3>
-
 <canvas id="grafico"></canvas>
 
 </div>
@@ -195,54 +201,39 @@ let chart=null;
 
 darkToggle.onclick=()=>document.body.classList.toggle("light");
 
-/* MOEDA */
-const moedaSelect = document.getElementById("moeda");
-let moedaAtual = localStorage.getItem("moeda") || "€";
-moedaSelect.value = moedaAtual;
-moedaSelect.onchange = () => {
-  moedaAtual = moedaSelect.value;
-  localStorage.setItem("moeda", moedaAtual);
-  carregar();
-};
+/* SALÁRIO */
+const salarioInput = document.getElementById("salario");
+const salAdd = document.getElementById("salAdd");
+const salEdit = document.getElementById("salEdit");
+const salDel = document.getElementById("salDel");
 
-/* MESES */
-function carregarMesesFixos(){
-  mesSelecionado.innerHTML="";
-  const agora=new Date();
-  for(let i=0;i<12;i++){
-    const d=new Date(agora.getFullYear(),agora.getMonth()-i,1);
-    const opt=document.createElement("option");
-    opt.value=`${d.getFullYear()}-${d.getMonth()}`;
-    opt.textContent=d.toLocaleString("pt-PT",{month:"long",year:"numeric"});
-    mesSelecionado.appendChild(opt);
+function carregarSalario(){
+  const s = localStorage.getItem("salario");
+  if(s){
+    salarioInput.value = s;
+    salarioInput.disabled = true;
+  }else{
+    salarioInput.value = "";
+    salarioInput.disabled = false;
   }
 }
-
-/* CATEGORIAS */
-let categorias = JSON.parse(localStorage.getItem("categorias")) ||
-["Alimentação","Transporte","Renda","Lazer","Outros"];
-
-function renderCategorias(){
-  cat.innerHTML="";
-  categorias.forEach(c=>{
-    const o=document.createElement("option");
-    o.textContent=c;
-    cat.appendChild(o);
-  });
-  localStorage.setItem("categorias",JSON.stringify(categorias));
-}
-
-document.querySelector(".cat-add").onclick=()=>{
-  const nome=prompt("Nova categoria:");
-  if(nome && !categorias.includes(nome)){
-    categorias.push(nome);
-    renderCategorias();
+salAdd.onclick=()=>{
+  if(salarioInput.value){
+    localStorage.setItem("salario",salarioInput.value);
+    salarioInput.disabled=true;
+    carregar();
   }
 };
-document.querySelector(".cat-del").onclick=()=>{
-  if(confirm(`Apagar categoria "${cat.value}"?`)){
-    categorias=categorias.filter(c=>c!==cat.value);
-    renderCategorias();
+salEdit.onclick=()=>{
+  salarioInput.disabled=false;
+  salarioInput.focus();
+};
+salDel.onclick=()=>{
+  if(confirm("Apagar salário mensal?")){
+    localStorage.removeItem("salario");
+    salarioInput.value="";
+    salarioInput.disabled=false;
+    carregar();
   }
 };
 
@@ -252,9 +243,8 @@ auth.onAuthStateChanged(u=>{
     login.style.display="none";
     app.style.display="block";
     logoutBtn.style.display="block";
-    salario.value=localStorage.getItem("salario")||"";
-    carregarMesesFixos();
-    renderCategorias();
+    carregarMeses();
+    carregarSalario();
     carregar();
   }else{
     login.style.display="block";
@@ -269,93 +259,17 @@ loginBtn.onclick=()=>auth
 
 logoutBtn.onclick=()=>auth.signOut();
 
-/* SALÁRIO */
-salario.onchange=()=>{
-  localStorage.setItem("salario",salario.value);
-  carregar();
-};
-
-/* ADD */
-addBtn.onclick=()=>{
-  if(!val.value)return;
-  const [ano,mes]=mesSelecionado.value.split("-").map(Number);
-  db.collection("gastos").add({
-    uid:auth.currentUser.uid,
-    desc:desc.value,
-    cat:cat.value,
-    val:+val.value,
-    ano,mes
-  });
-  desc.value="";val.value="";
-};
-
-/* LOAD */
-function carregar(){
-  const [ano,mes]=mesSelecionado.value.split("-").map(Number);
-  let total=0;
-  let cats={};
-  lista.innerHTML="";
-
-  db.collection("gastos")
-    .where("uid","==",auth.currentUser.uid)
-    .where("ano","==",ano)
-    .where("mes","==",mes)
-    .onSnapshot(s=>{
-      total=0;
-      cats={};
-      lista.innerHTML="";
-      s.forEach(doc=>{
-        const g=doc.data();
-        total+=g.val;
-        cats[g.cat]=(cats[g.cat]||0)+g.val;
-        lista.innerHTML+=`
-          <div class="gasto">
-            <span>${g.desc}</span>
-            <span>
-              ${moedaAtual} ${g.val.toFixed(2)}
-              <button onclick="apagar('${doc.id}')">🗑</button>
-            </span>
-          </div>`;
-      });
-      totalEl.innerText = `${moedaAtual} ${total.toFixed(2)}`;
-      desenharGrafico(cats);
-      compararMesAnterior(ano,mes,total);
-    });
-}
-
-const totalEl = document.getElementById("total");
-mesSelecionado.onchange=carregar;
-
-function apagar(id){
-  if(confirm("Apagar este gasto?")){
-    db.collection("gastos").doc(id).delete();
+/* MESES */
+function carregarMeses(){
+  mesSelecionado.innerHTML="";
+  const now=new Date();
+  for(let i=0;i<12;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const o=document.createElement("option");
+    o.value=`${d.getFullYear()}-${d.getMonth()}`;
+    o.textContent=d.toLocaleString("pt-PT",{month:"long",year:"numeric"});
+    mesSelecionado.appendChild(o);
   }
-}
-
-function desenharGrafico(cats){
-  if(chart)chart.destroy();
-  chart=new Chart(grafico,{
-    type:"doughnut",
-    data:{
-      labels:Object.keys(cats),
-      datasets:[{data:Object.values(cats)}]
-    }
-  });
-}
-
-async function compararMesAnterior(ano,mes,totalAtual){
-  let pa=ano,pm=mes-1;
-  if(pm<0){pm=11;pa--;}
-  let totalAnt=0;
-  const snap=await db.collection("gastos")
-    .where("uid","==",auth.currentUser.uid)
-    .where("ano","==",pa)
-    .where("mes","==",pm)
-    .get();
-  snap.forEach(d=>totalAnt+=d.data().val);
-  const diff=totalAtual-totalAnt;
-  comparacao.innerText=
-    `Mês anterior: ${moedaAtual} ${totalAnt.toFixed(2)} | Diferença: ${diff>=0?"↑":"↓"} ${moedaAtual} ${Math.abs(diff).toFixed(2)}`;
 }
 </script>
 
