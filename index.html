@@ -194,7 +194,6 @@ auth.onAuthStateChanged(u => {
     appDiv.style.display = "block";
     logoutDiv.style.display = "block";
 carregarMeses();
-carregar();
 
     carregar();
   } else {
@@ -311,12 +310,16 @@ if (localStorage.getItem("darkMode") === "true") {
 }
 function carregarMeses() {
   const select = document.getElementById("mesSelecionado");
+  if (!select) return;
+
+  select.innerHTML = '<option value="">Mês atual</option>';
+
   const agora = new Date();
   const ano = agora.getFullYear();
 
   const meses = [
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
   ];
 
   meses.forEach((nome, index) => {
