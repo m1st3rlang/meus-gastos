@@ -12,148 +12,97 @@
 
 <style>
 :root {
-  --bg: #f5f6fa;
-  --card: #ffffff;
-  --text: #111;
-  --muted: #666;
-  --primary: #000;
+  --bg:#f5f6fa; --card:#fff; --text:#111; --muted:#666; --primary:#000;
 }
-
 .dark {
-  --bg: #0f0f10;
-  --card: #1a1a1c;
-  --text: #fff;
-  --muted: #aaa;
-  --primary: #fff;
+  --bg:#0f0f10; --card:#1a1a1c; --text:#fff; --muted:#aaa; --primary:#fff;
 }
-
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:var(--bg);
+  color:var(--text);
 }
-
-.app {
-  max-width: 420px;
-  margin: auto;
-  padding: 20px;
-}
-
+.app { max-width:420px; margin:auto; padding:20px; }
 .card {
-  background: var(--card);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.06);
+  background:var(--card);
+  border-radius:18px;
+  padding:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
 }
-
-h2 {
-  text-align: center;
-  margin-bottom: 20px;
+h2 { text-align:center; }
+input,select {
+  width:100%;
+  padding:14px;
+  margin-top:12px;
+  border-radius:12px;
+  border:1px solid #ddd;
+  background:transparent;
+  color:var(--text);
 }
-
-input, select {
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  margin-top: 12px;
-  font-size: 15px;
-  background: transparent;
-  color: var(--text);
-}
-
-.dark input, .dark select {
-  border-color: #333;
-}
-
+.dark input,.dark select { border-color:#333; }
 button {
-  width: 100%;
-  padding: 14px;
-  border-radius: 14px;
-  border: none;
-  margin-top: 14px;
-  font-size: 15px;
-  cursor: pointer;
+  width:100%;
+  padding:14px;
+  margin-top:14px;
+  border:none;
+  border-radius:14px;
+  cursor:pointer;
+  font-size:15px;
 }
-
-.btn-main {
-  background: var(--primary);
-  color: var(--bg);
-}
-
-.btn-light {
-  background: transparent;
-  color: var(--muted);
-  font-size: 14px;
-}
+.btn-main { background:var(--primary); color:var(--bg); }
+.btn-light { background:transparent; color:var(--muted); font-size:14px; }
 
 .gasto {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
+  display:flex;
+  justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid #eee;
 }
-
-.dark .gasto {
-  border-bottom: 1px solid #333;
-}
-
+.dark .gasto { border-bottom:1px solid #333; }
 .apagar {
-  background: none;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
+  background:none;
+  border:none;
+  cursor:pointer;
+  color:var(--muted);
 }
+.apagar:hover { color:#ff4d4d; }
 
-.apagar:hover {
-  color: #ff4d4d;
-}
-
-/* TOGGLE LUA */
 #dark-toggle {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  font-size: 22px;
-  cursor: pointer;
+  position:fixed;
+  top:16px;
+  right:16px;
+  font-size:22px;
+  cursor:pointer;
 }
-
-/* LOGOUT */
 #logoutBtn {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 12px 28px;
-  border-radius: 30px;
-  background: var(--primary);
-  color: var(--bg);
-  font-size: 14px;
+  position:fixed;
+  bottom:24px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:12px 28px;
+  border-radius:30px;
+  background:var(--primary);
+  color:var(--bg);
 }
 </style>
 </head>
 
 <body>
 
-<div id="dark-toggle" onclick="toggleDark()">🌙</div>
+<div id="dark-toggle">🌙</div>
 
 <div class="app">
-
   <div class="card">
     <h2>💰 Gestão de Gastos</h2>
 
-    <!-- LOGIN -->
     <div id="login">
       <input id="email" placeholder="Email">
       <input id="password" type="password" placeholder="Palavra-passe">
       <button class="btn-main" onclick="login()">Entrar / Criar conta</button>
     </div>
 
-    <!-- APP -->
     <div id="app" style="display:none">
-
       <select id="mesSelecionado" onchange="carregar()"></select>
 
       <select id="moeda">
@@ -173,12 +122,9 @@ button {
 
       <button class="btn-main" onclick="addGasto()">Adicionar gasto</button>
 
-      <h3 style="margin-top:24px">Gastos do mês</h3>
+      <h3>Gastos do mês</h3>
       <div id="lista"></div>
-
       <h3>Total: <span id="total">0.00</span></h3>
-      <div id="comparacao" style="text-align:center;color:var(--muted)"></div>
-
     </div>
   </div>
 </div>
@@ -186,123 +132,90 @@ button {
 <button id="logoutBtn" onclick="logout()" style="display:none">Sair</button>
 
 <script>
-/* FIREBASE */
 firebase.initializeApp({
-  apiKey: "AIzaSyA53gz5pwnzSFx4alP2Gb6L7N3qAvXmMdU",
-  authDomain: "controle-financeiro-fafd9.firebaseapp.com",
-  projectId: "controle-financeiro-fafd9"
+  apiKey:"AIzaSyA53gz5pwnzSFx4alP2Gb6L7N3qAvXmMdU",
+  authDomain:"controle-financeiro-fafd9.firebaseapp.com",
+  projectId:"controle-financeiro-fafd9"
 });
+const auth=firebase.auth();
+const db=firebase.firestore();
 
-const auth = firebase.auth();
-const db = firebase.firestore();
+const loginDiv=document.getElementById("login");
+const appDiv=document.getElementById("app");
+const logoutBtn=document.getElementById("logoutBtn");
+const darkToggle=document.getElementById("dark-toggle");
 
-const loginDiv = document.getElementById("login");
-const appDiv = document.getElementById("app");
-const logoutBtn = document.getElementById("logoutBtn");
-
-let user = null;
-
-/* DARK MODE */
-function toggleDark() {
+darkToggle.onclick=()=>{
   document.body.classList.toggle("dark");
-  dark-toggle.innerText = document.body.classList.contains("dark") ? "☀️" : "🌙";
-  localStorage.setItem("dark", document.body.classList.contains("dark"));
-}
-if (localStorage.getItem("dark") === "true") {
+  darkToggle.innerText=document.body.classList.contains("dark")?"☀️":"🌙";
+  localStorage.setItem("dark",document.body.classList.contains("dark"));
+};
+if(localStorage.getItem("dark")==="true"){
   document.body.classList.add("dark");
+  darkToggle.innerText="☀️";
 }
 
-/* AUTH */
-auth.onAuthStateChanged(u => {
-  if (u) {
-    user = u;
-    loginDiv.style.display = "none";
-    appDiv.style.display = "block";
-    logoutBtn.style.display = "block";
+auth.onAuthStateChanged(u=>{
+  if(u){
+    loginDiv.style.display="none";
+    appDiv.style.display="block";
+    logoutBtn.style.display="block";
+    user=u;
     carregarMeses();
     carregarCategorias();
     carregar();
-  } else {
-    user = null;
-    loginDiv.style.display = "block";
-    appDiv.style.display = "none";
-    logoutBtn.style.display = "none";
+  }else{
+    loginDiv.style.display="block";
+    appDiv.style.display="none";
+    logoutBtn.style.display="none";
   }
 });
 
-function login() {
-  auth.signInWithEmailAndPassword(email.value, password.value)
-    .catch(() => auth.createUserWithEmailAndPassword(email.value, password.value));
+function login(){
+  auth.signInWithEmailAndPassword(email.value,password.value)
+  .catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
 }
+function logout(){ auth.signOut(); }
 
-function logout() {
-  auth.signOut();
+function carregarCategorias(){
+  const base=["Alimentação","Transporte","Renda","Lazer","Outros"];
+  const cats=JSON.parse(localStorage.getItem("cats"))||base;
+  cat.innerHTML="";
+  cats.forEach(c=>cat.innerHTML+=`<option>${c}</option>`);
 }
-
-/* CATEGORIAS */
-function carregarCategorias() {
-  const base = ["Alimentação","Transporte","Renda","Lazer","Outros"];
-  const saved = JSON.parse(localStorage.getItem("cats")) || base;
-  cat.innerHTML = "";
-  saved.forEach(c => cat.innerHTML += `<option>${c}</option>`);
-}
-
-function addCategoria() {
-  if (!novaCat.value) return;
-  const cats = JSON.parse(localStorage.getItem("cats")) || [];
+function addCategoria(){
+  if(!novaCat.value)return;
+  const cats=JSON.parse(localStorage.getItem("cats"))||[];
   cats.push(novaCat.value);
-  localStorage.setItem("cats", JSON.stringify(cats));
-  novaCat.value = "";
+  localStorage.setItem("cats",JSON.stringify(cats));
+  novaCat.value="";
   carregarCategorias();
 }
-
-/* MESES */
-function carregarMeses() {
-  mesSelecionado.innerHTML = "";
-  const ano = new Date().getFullYear();
-  const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  meses.forEach((m,i)=> mesSelecionado.innerHTML += `<option value="${ano}-${i}">${m} ${ano}</option>`);
+function carregarMeses(){
+  mesSelecionado.innerHTML="";
+  const ano=new Date().getFullYear();
+  const m=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  m.forEach((n,i)=>mesSelecionado.innerHTML+=`<option value="${ano}-${i}">${n} ${ano}</option>`);
 }
-
-/* GASTOS */
-function addGasto() {
-  if (!val.value) return;
-  const d = new Date();
+function addGasto(){
+  if(!val.value)return;
+  const d=new Date();
   db.collection("gastos").add({
-    uid: user.uid,
-    cat: cat.value,
-    desc: desc.value,
-    val: Number(val.value),
-    moeda: moeda.value,
-    mes: d.getMonth(),
-    ano: d.getFullYear()
+    uid:user.uid,cat:cat.value,desc:desc.value,val:+val.value,moeda:moeda.value,mes:d.getMonth(),ano:d.getFullYear()
   });
-  val.value = "";
-  desc.value = "";
+  val.value="";desc.value="";
 }
-
-function carregar() {
-  const [ano, mes] = mesSelecionado.value.split("-").map(Number);
-  db.collection("gastos")
-    .where("uid","==",user.uid)
-    .where("ano","==",ano)
-    .where("mes","==",mes)
-    .onSnapshot(snap => {
-      lista.innerHTML = "";
-      let totalMes = 0;
-      snap.forEach(d => {
-        const g = d.data();
-        totalMes += g.val;
-        lista.innerHTML += `
-          <div class="gasto">
-            <span>${g.cat} • ${g.desc}</span>
-            <span>${g.moeda}${g.val.toFixed(2)}
-              <button class="apagar" onclick="db.collection('gastos').doc('${d.id}').delete()">🗑</button>
-            </span>
-          </div>`;
-      });
-      total.innerText = totalMes.toFixed(2);
+function carregar(){
+  const [ano,mes]=mesSelecionado.value.split("-").map(Number);
+  db.collection("gastos").where("uid","==",user.uid).where("ano","==",ano).where("mes","==",mes)
+  .onSnapshot(s=>{
+    lista.innerHTML="";let t=0;
+    s.forEach(d=>{
+      const g=d.data();t+=g.val;
+      lista.innerHTML+=`<div class="gasto"><span>${g.cat} • ${g.desc}</span><span>${g.moeda}${g.val.toFixed(2)} <button class="apagar" onclick="db.collection('gastos').doc('${d.id}').delete()">🗑</button></span></div>`;
     });
+    total.innerText=t.toFixed(2);
+  });
 }
 </script>
 
