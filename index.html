@@ -76,6 +76,21 @@ button{
   border-radius:6px;
 }
 
+.cat-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.cat-row select{flex:1;}
+.cat-row button{
+  width:auto;
+  padding:10px 14px;
+  border-radius:50%;
+  font-size:18px;
+}
+.cat-add{background:#4caf50;color:white;}
+.cat-del{background:#ff6b6b;color:white;}
+
 .compare{
   margin-top:12px;
   font-size:14px;
@@ -83,9 +98,7 @@ button{
   text-align:center;
 }
 
-canvas{
-  margin-top:20px;
-}
+canvas{margin-top:20px;}
 
 #darkToggle{
   position:fixed;
@@ -122,20 +135,18 @@ canvas{
 
 <div id="app" style="display:none">
 
-<!-- MESES (como antes) -->
+<!-- MESES -->
 <select id="mesSelecionado"></select>
 
-<!-- SALÁRIO (mantido) -->
+<!-- SALÁRIO -->
 <input id="salario" type="number" placeholder="Salário mensal">
 
-<!-- CATEGORIA -->
-<select id="cat">
-  <option>Alimentação</option>
-  <option>Transporte</option>
-  <option>Renda</option>
-  <option>Lazer</option>
-  <option>Outros</option>
-</select>
+<!-- CATEGORIAS -->
+<div class="cat-row">
+  <select id="cat"></select>
+  <button class="cat-add">+</button>
+  <button class="cat-del">×</button>
+</div>
 
 <!-- ADD -->
 <input id="desc" placeholder="Descrição">
@@ -186,6 +197,37 @@ function carregarMesesFixos(){
   }
 }
 
+/* CATEGORIAS DINÂMICAS */
+let categorias = JSON.parse(localStorage.getItem("categorias")) || [
+  "Alimentação","Transporte","Renda","Lazer","Outros"
+];
+
+function renderCategorias(){
+  cat.innerHTML="";
+  categorias.forEach(c=>{
+    const o=document.createElement("option");
+    o.textContent=c;
+    cat.appendChild(o);
+  });
+  localStorage.setItem("categorias",JSON.stringify(categorias));
+}
+
+document.querySelector(".cat-add").onclick=()=>{
+  const nome = prompt("Nova categoria:");
+  if(nome && !categorias.includes(nome)){
+    categorias.push(nome);
+    renderCategorias();
+  }
+};
+
+document.querySelector(".cat-del").onclick=()=>{
+  const atual = cat.value;
+  if(confirm(`Apagar categoria "${atual}"?`)){
+    categorias = categorias.filter(c=>c!==atual);
+    renderCategorias();
+  }
+};
+
 /* AUTH */
 auth.onAuthStateChanged(u=>{
   if(u){
@@ -194,6 +236,7 @@ auth.onAuthStateChanged(u=>{
     logoutBtn.style.display="block";
     salario.value=localStorage.getItem("salario")||"";
     carregarMesesFixos();
+    renderCategorias();
     carregar();
   }else{
     login.style.display="block";
